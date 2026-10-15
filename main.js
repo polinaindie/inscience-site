@@ -85,10 +85,8 @@
   }), { threshold: .18, rootMargin: '0px 0px -8% 0px' });
   $$('.reveal, .split, .dirs__grid, .pcard').forEach(el => reduce ? el.classList.add('in') : io.observe(el));
 
-  /* ---------- 5. Напрямки → фільтр проєктів ---------- */
+  /* ---------- 5. Напрямки: лічильники проєктів ---------- */
   const cards = $$('.pcard');
-  const chips = $$('.chip');
-  const projects = $('#projects');
   const dirsGrid = $('.dirs__grid');
   const plural = n => n === 1 ? 'проєкт' : (n >= 2 && n <= 4 ? 'проєкти' : 'проєктів');
   // лічильник уже є в HTML; тут лише звіряємо з картками
@@ -183,171 +181,108 @@
     }).catch(err => console.warn('pattern', name, err));
   });
 
-  // Фільтр: лишаються лише проєкти табу. Сітка перебудовується (FLIP): ті, що лишились, доїжджають на нові місця,
-  // ті, що йдуть, гаснуть на старому місці поверх сітки, нові — проявляються
-  const pgridEl = $('.pgrid');
-  const hits = (c, f) => f === 'all' || c.dataset.dirs.split(' ').includes(f);
-  const FLIP = { duration: 560, easing: 'cubic-bezier(.2,.7,.1,1)' };
-  function applyFilter(f) {
-    chips.forEach(c => {
-      const on = c.dataset.filter === f;
-      c.classList.toggle('is-on', on); c.setAttribute('aria-pressed', on);
-    });
-    renderStats(f);
-    // попередній фільтр ще анімується — доводимо його до кінця
-    cards.forEach(c => {
-      c.getAnimations().forEach(an => an.cancel());
-      if (c.classList.contains('is-leaving')) {
-        c.hidden = true; c.classList.remove('is-leaving');
-        ['left', 'top', 'width', 'height'].forEach(k => c.style.removeProperty(k));
+  // Колода проєктів: на десктопі сцена закріплюється, скрол гортає картки, як спікер — картки свого виступу.
+  // Поточна стоїть у слоті, наступні чекають у ряд праворуч (клік по видимій — гортаємо до неї); заїжджаючи,
+  // картка лягає поверх попередньої, а пройдені складаються під нею в стопку по центру (трохи менші, з легким нахилом).
+  const deck = $('.pdeck');
+  const deckStage = $('.pdeck__stage', deck);
+  const ptrack = $('.ptrack', deck);
+  const deckNum = $('.pdeck__count b', deck);
+  const deckTotal = $('.pdeck__total', deck);
+  const deckBtns = $$('.pdeck__btn', deck);
+  const deckMQ = matchMedia('(min-width: 900px) and (min-height: 600px)');
+  const DECK_STEP = .75;   // висоти екрана скролу на одну картку
+  let deckOn = false, deckCards = [], deckW = 0, deckRaw = -1, deckIdx = 0, deckStick = 0;
+  cards.forEach(c => { c._over = $('.pcard__over', c); });
+  const pad2 = n => String(n).padStart(2, '0');
+  const deckTop = () => scrollY + deck.getBoundingClientRect().top - deckStick;   // скрол, з якого сцена закріплена
+  const deckRun = () => deck.offsetHeight - deckStage.offsetHeight;
+  function layoutDeck() {
+    deckOn = !reduce && deckMQ.matches;
+    deck.classList.toggle('is-pinned', deckOn);
+    deckCards = cards;
+    deckTotal.textContent = pad2(deckCards.length);
+    cards.forEach(c => { c.style.transform = ''; c.style.zIndex = ''; c.style.opacity = ''; c._over.style.transform = ''; c.classList.remove('is-back'); });
+    deck.style.height = '';
+    deckStick = parseFloat(getComputedStyle(deckStage).top) || 0;   // = --hdr, сцена стоїть під хедером
+    if (deckOn) {
+      deckW = (deckCards[0]?.offsetWidth || 0) + (parseFloat(getComputedStyle(deck).getPropertyValue('--gap')) || 28);
+      deck.style.height = `${deckStage.offsetHeight + Math.max(0, deckCards.length - 1) * innerHeight * DECK_STEP}px`;
+    }
+    deckRaw = -1;
+  }
+  function setDeckIdx(i) {
+    deckIdx = i;
+    deckNum.textContent = pad2(i + 1);
+    deckBtns[0].disabled = i <= 0;
+    deckBtns[1].disabled = i >= deckCards.length - 1;
+  }
+  function renderDeck(force) {
+    const n = deckCards.length;
+    if (!deckOn) {
+      // нативний ряд: номер — за найближчою до лівого краю карткою
+      const step = deckCards[1] ? deckCards[1].offsetLeft - deckCards[0].offsetLeft : 1;
+      const k = n > 1 ? clamp(ptrack.scrollLeft / (step * (n - 1))) : 0;
+      setDeckIdx(Math.round(k * (n - 1)));
+      return;
+    }
+    const raw = n > 1 ? clamp((deckStick - deck.getBoundingClientRect().top) / deckRun()) : 0;
+    if (raw === deckRaw && !force) return;
+    deckRaw = raw;
+    const t = raw * (n - 1), i = Math.min(Math.floor(t), n - 2), fr = t - Math.max(i, 0);
+    const p = n > 1 ? Math.max(i, 0) + ease(range(fr, .14, .86)) : 0;   // плато: картка трохи стоїть, перш ніж її перегорнуть
+    const room = ptrack.clientWidth;
+    deckCards.forEach((c, k) => {
+      const d = k - p;
+      let x, s = 1, rot = 0, o = 1;
+      if (d >= 0) x = d * deckW;
+      else {
+        const e = Math.min(-d, 3);
+        x = 0; s = 1 - e * .03; o = 1 - range(-d, 2.4, 3.2);   // стопка по центру: краї видно з обох боків
+        rot = (k % 2 ? 1.6 : -2.2) * Math.min(-d, 1) + (k % 3 - 1) * .6 * range(-d, 1, 2);
       }
+      c.style.zIndex = k + 1;
+      c.style.opacity = o < 1 ? o.toFixed(3) : '';
+      c.style.transform = `translate3d(${x.toFixed(1)}px,0,0) rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})`;
+      // фото трохи запізнюється за карткою, що заїжджає
+      c._over.style.transform = d > 0 && d < 1.6 ? `translate3d(${(Math.min(d, 1) * 90).toFixed(1)}px,0,0)` : '';
+      // наступна, що виглядає справа, — клікабельна
+      c.classList.toggle('is-back', d > .5 && c.offsetLeft + x < room);
     });
-    if (reduce) { cards.forEach(c => { c.hidden = !hits(c, f); }); setCols(); return; }
-    const g = pgridEl.getBoundingClientRect();
-    const before = new Map(cards.filter(c => !c.hidden).map(c => [c, c.getBoundingClientRect()]));
-    const leaving = cards.filter(c => !c.hidden && !hits(c, f));
-    const entering = cards.filter(c => c.hidden && hits(c, f));
-    entering.forEach(c => { c.hidden = false; });
-    leaving.forEach(c => {
-      const r = before.get(c);
-      c.classList.add('is-leaving');
-      Object.assign(c.style, { left: `${r.left - g.left}px`, top: `${r.top - g.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-    });
-    // нова розкладка
-    cards.forEach(c => {
-      if (c.hidden || leaving.includes(c)) return;
-      const r = c.getBoundingClientRect(), o = before.get(c);
-      if (!o) { c.animate([{ opacity: 0, transform: 'scale(.94)' }, { opacity: 1, transform: 'none' }], { ...FLIP, delay: 160, fill: 'backwards' }); return; }
-      const dx = o.left - r.left, dy = o.top - r.top;
-      if (Math.abs(dx) + Math.abs(dy) > 1) c.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], FLIP);
-    });
-    leaving.forEach(c => {
-      c.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.94)' }], { duration: 260, easing: 'ease-in', fill: 'forwards' })
-        .onfinish = () => {
-          c.hidden = true; c.classList.remove('is-leaving');
-          ['left', 'top', 'width', 'height'].forEach(k => c.style.removeProperty(k));
-          c.getAnimations().forEach(an => an.cancel());
-        };
-    });
-    setCols();
+    setDeckIdx(Math.round(p));
   }
-  chips.forEach(c => c.addEventListener('click', () => applyFilter(c.dataset.filter)));
+  // Позиція скролу, на якій картка i лежить у слоті
+  const deckY = i => deckTop() + (deckCards.length > 1 ? i / (deckCards.length - 1) : 0) * deckRun();
+  deckBtns.forEach(b => b.addEventListener('click', () => {
+    const i = clamp(deckIdx + +b.dataset.step, 0, deckCards.length - 1);
+    if (deckOn) scrollTo({ top: deckY(i), behavior: 'smooth' });
+    else ptrack.scrollTo({ left: deckCards[i].offsetLeft - deckCards[0].offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+  }));
+  // Клавіатура: фокус на картці за кадром — догортаємо до неї
+  ptrack.addEventListener('focusin', e => {
+    const c = e.target.closest('.pcard');
+    if (!deckOn || !c) return;
+    ptrack.scrollLeft = 0;
+    scrollTo({ top: deckY(deckCards.indexOf(c)), behavior: 'smooth' });
+  });
+  // Клік по краю картки позаду — гортаємо до неї
+  ptrack.addEventListener('click', e => {
+    const c = e.target.closest('.pcard.is-back');
+    if (!deckOn || !c) return;
+    e.preventDefault();
+    scrollTo({ top: deckY(deckCards.indexOf(c)), behavior: 'smooth' });
+  });
+  ptrack.addEventListener('scroll', () => { if (!deckOn) renderDeck(); }, { passive: true });
+  deckMQ.addEventListener('change', () => { layoutDeck(); renderDeck(true); });
+  layoutDeck();
+  renderDeck(true);
 
-  // Цифри впливу за табом: старі гаснуть, нові «нараховуються»; немає цифр — рядок згортається
-  const pstats = $('.pstats');
-  const pstatEls = $$('.pstat');
-  let statsSeen = false;
-  const fmtStat = (b, v) => b.dataset.fmt === 'mln'
-    ? `${v.toFixed(1).replace('.', ',')} млн`
-    : `${Math.round(v).toLocaleString('uk-UA').replace(/\s/g, ' ')}${b.dataset.suf || ''}`;
-  function countUp(b) {
-    const to = parseFloat(b.dataset.to), t0 = performance.now(), dur = reduce ? 0 : 1200;
-    b._t0 = t0;
-    const tick = now => {
-      if (b._t0 !== t0) return;   // уже запущено новий відлік
-      const k = dur ? easeOut(clamp((now - t0) / dur)) : 1;
-      b.textContent = fmtStat(b, to * k);
-      if (k < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-  function renderStats(f) {
-    const show = pstatEls.filter(el => f === 'all' || el.dataset.dir === f);
-    pstats.classList.toggle('is-empty', !show.length);
-    pstatEls.forEach(el => {
-      const on = show.includes(el), was = !el.hidden;
-      el.hidden = !on;
-      if (on && statsSeen && !was) {
-        if (!reduce) el.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { ...FLIP, delay: 80 * show.indexOf(el), fill: 'backwards' });
-        countUp($('b', el));
-      }
-    });
-  }
-  // перший показ — відлік, коли рядок у кадрі
-  new IntersectionObserver(([e], o) => {
-    if (!e.isIntersecting) return;
-    o.disconnect(); statsSeen = true;
-    pstatEls.filter(el => !el.hidden).forEach(el => countUp($('b', el)));
-  }, { threshold: .4 }).observe(pstats);
-
-  // Номер колонки картки — для каскаду появи (60 мс на колонку)
-  const pgrid = $('.pgrid');
-  const setCols = () => {
-    const n = getComputedStyle(pgrid).gridTemplateColumns.split(' ').length;
-    cards.forEach(c => c.style.setProperty('--col', Math.round((c.offsetLeft - pgrid.offsetLeft) / (pgrid.clientWidth / n))));
-  };
-  setCols();
-
-  // Чипи на мобільному: затухання справа зникає, коли доскролили до кінця
-  const chipsBox = $('.chips');
-  const chipsEnd = () => chipsBox.classList.toggle('is-end', chipsBox.scrollLeft + chipsBox.clientWidth >= chipsBox.scrollWidth - 4);
-  chipsBox.addEventListener('scroll', chipsEnd, { passive: true });
-  chipsEnd();
-
-  // Параллакс фото/форми: лише десктоп, лише картки в кадрі (сам рух — у frame())
-  const parallaxMQ = matchMedia('(min-width: 1000px) and (hover: hover)');
-  const cardsInView = new Set();
-  cards.forEach(c => { c._over = $('.pcard__over', c); c._shape = $('.pcard__shape', c); });
-  if (!reduce) {
-    const pio = new IntersectionObserver(es => es.forEach(e => (e.isIntersecting ? cardsInView.add(e.target) : cardsInView.delete(e.target))));
-    cards.forEach(c => pio.observe(c));
-  }
-  parallaxMQ.addEventListener('change', () => cards.forEach(c => { c._over.style.transform = ''; if (c._shape) c._shape.style.transform = ''; }));
   let rzP;
-  addEventListener('resize', () => { clearTimeout(rzP); rzP = setTimeout(() => { setCols(); chipsEnd(); }, 150); });
+  addEventListener('resize', () => { clearTimeout(rzP); rzP = setTimeout(() => { layoutDeck(); renderDeck(true); }, 150); });
 
   // Ритми дисків крутяться лише поки сітка в кадрі (і лише на hover/focus — це в CSS)
   if (!reduce) new IntersectionObserver(([e]) => dirsGrid.classList.toggle('is-live', e.isIntersecting)).observe(dirsGrid);
 
-  // Колбек після завершення плавного скролу: scrollend або запасний таймер
-  const afterScroll = cb => {
-    let done = false, t = 0;
-    const fin = () => { if (done) return; done = true; clearTimeout(t); removeEventListener('scrollend', fin); cb(); };
-    addEventListener('scrollend', fin);
-    t = setTimeout(fin, 'onscrollend' in window ? 2500 : 900);
-  };
-  // Де зупиниться сторінка, коли доскролимо до #projects (з урахуванням scroll-padding під хедер)
-  const projectsY = () => {
-    const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
-    return clamp(scrollY + projects.getBoundingClientRect().top - pad, 0, document.documentElement.scrollHeight - innerHeight);
-  };
-
-  // Бейдж летить у свій чип (FLIP): чип рахуємо там, де він опиниться після скролу
-  function flyBadge(d, f, endY) {
-    const src = $('.dir__badge svg', d), chip = chips.find(c => c.dataset.filter === f);
-    if (!src || !chip || !src.animate) return;
-    const a = src.getBoundingClientRect(), b = $('svg', chip).getBoundingClientRect();
-    const fly = src.cloneNode(true);
-    fly.classList.add('fly');
-    fly.style.cssText = `left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;color:${getComputedStyle(src).color}`;
-    document.body.appendChild(fly);
-    const tx = b.left + b.width / 2 - (a.left + a.width / 2);
-    const ty = b.top + b.height / 2 + (scrollY - endY) - (a.top + a.height / 2);
-    const k = b.width / a.width;
-    fly.animate([
-      { transform: 'none' },
-      { transform: `translate(${tx * .5}px,${ty * .5 - 80}px) scale(${(1 + k) / 2 * 1.15}) rotate(-180deg)`, offset: .5 },
-      { transform: `translate(${tx}px,${ty}px) scale(${k}) rotate(-360deg)` },
-    ], { duration: 900, easing: 'cubic-bezier(.2,.7,.1,1)' }).onfinish = () => fly.remove();
-  }
-
-  $$('.dir').forEach(d => d.addEventListener('click', e => {
-    if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // нова вкладка — як звичайне посилання
-    e.preventDefault();
-    const f = d.dataset.dir;
-    const chip = chips.find(c => c.dataset.filter === f);
-    const land = () => {
-      applyFilter(f);
-      chip.focus({ preventScroll: true });
-      chip.scrollIntoView({ block: 'nearest', inline: 'nearest' });   // на мобільному чип може бути за краєм стрічки
-    };
-    if (reduce) { projects.scrollIntoView(); land(); return; }
-    const endY = projectsY();
-    if (Math.abs(endY - scrollY) < 4) { land(); return; }
-    flyBadge(d, f, endY);
-    scrollTo({ top: endY, behavior: 'smooth' });
-    afterScroll(land);   // фільтр — після прибуття, щоб було видно підсвічування збігів
-  }));
 
   /* ---------- 6. Форми напрямків (кільце в «Підтримати») ---------- */
   const FORMS = [
@@ -485,13 +420,8 @@
       }
     }
 
-    // ПРОЄКТИ: легкий параллакс фото й форми — лише десктоп і лише картки в кадрі
-    if (!reduce && parallaxMQ.matches) for (const c of cardsInView) {
-      const r = c.getBoundingClientRect();
-      const k = clamp((r.top + r.height / 2 - vh / 2) / vh, -1, 1);
-      c._over.style.transform = `translate3d(0,${(k * -14).toFixed(1)}px,0)`;
-      if (c._shape) c._shape.style.transform = `translate3d(0,${(k * 18).toFixed(1)}px,0)`;
-    }
+    // ПРОЄКТИ: колода
+    if (deckOn) renderDeck();
 
     // ПРО НАС: великі форми поля трохи пливуть (лише поки секція в кадрі)
     if (!reduce) {
@@ -906,7 +836,7 @@
     el.style.setProperty('--x', `${(e.clientX - r.left).toFixed(0)}px`);
     el.style.setProperty('--y', `${(e.clientY - r.top).toFixed(0)}px`);
   };
-  $$('.btn, .chip, .req__btn, .rbtn, .mcard').forEach(el => {
+  $$('.btn, .req__btn, .rbtn, .mcard').forEach(el => {
     el.addEventListener('pointerenter', e => fillXY(el, e));
     el.addEventListener('pointerleave', e => fillXY(el, e));
     // фокус з клавіатури — від центру
