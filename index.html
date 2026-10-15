@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 
@@ -50,19 +50,12 @@
 <section class="hero" id="top" data-theme="blue">
   <div class="hero__sticky">
     <div class="hero__blue"></div>
+    <!-- Зелене коло: розкривається з лінії повіки, коли око кліпнуло, і заливає екран -->
+    <div class="hero__green" aria-hidden="true"></div>
 
-    <!-- Прихована наука: форми тон-в-тон; копію в кольорі скрипт кладе в лінзу -->
+    <!-- Прихована наука: великі форми ілюстрацій тон-в-тон (svg поля й лупу з шарами ілюстрацій будує скрипт) -->
     <div class="hero__hidden" aria-hidden="true">
-      <div class="hero__shapes hero__shapes--tone">
-        <svg style="--x:10%;--y:24%;--s:52vmin;--r:-10deg"><use href="#i-star"/></svg>
-        <svg style="--x:50%;--y:-4%;--s:38vmin;--r:0deg"><use href="#i-ring"/></svg>
-        <svg style="--x:90%;--y:20%;--s:50vmin;--r:12deg"><use href="#i-flower"/></svg>
-        <svg style="--x:12%;--y:88%;--s:46vmin;--r:8deg"><use href="#i-heart"/></svg>
-        <svg style="--x:52%;--y:104%;--s:40vmin;--r:-6deg"><use href="#i-clover"/></svg>
-        <svg style="--x:92%;--y:86%;--s:52vmin;--r:-14deg"><use href="#i-drop"/></svg>
-      </div>
-      <div class="hero__lens"><div class="hero__mag"></div></div>
-      <span class="hero__ring"></span>
+      <div class="hero__field"></div>
     </div>
 
     <div class="hero__content wrap">
@@ -94,6 +87,9 @@
     <!-- Портал: коло з оком знову росте, і крізь нього відкривається «Про нас» (копію кладе скрипт) -->
     <div class="hero__portal" aria-hidden="true" inert></div>
 
+    <!-- Око-портал: біле око росте на весь екран, його зіниця — отвір, крізь який видно «Про нас» (path ставить скрипт) -->
+    <svg class="hero__eye" aria-hidden="true"><path fill-rule="evenodd" d="M152.442 32.2171C157.187 36.3437 157.187 43.6979 152.442 47.8245C139.045 59.4675 110.748 80.0416 78.0004 80.0416C45.2528 80.0416 16.956 59.4675 3.55921 47.8245C-1.1864 43.6979 -1.1864 36.3437 3.55921 32.2171C16.956 20.5741 45.2528 0 78.0004 0C110.748 0 139.045 20.5741 152.442 32.2171Z"/></svg>
+
     <div class="hero__dot" aria-hidden="true">
       <svg class="hero__dot-ico"><use href="#i-eye"/></svg>
     </div>
@@ -101,26 +97,27 @@
 </section>
 
 <!-- ============ 2. ПРО НАС ============ -->
-<section class="about" id="about" data-theme="field" style="--field:var(--purple);--on:var(--paper)">
-  <!-- Великі форми інших кольорів, обрізані краями поля -->
-  <div class="about__deco" aria-hidden="true">
-    <svg class="about__form" style="--c:var(--lime);--x:93%;--y:96%;--s:44vmin;--r:-12deg;--k:-.10"><use href="#i-flower"/></svg>
-    <svg class="about__form" style="--c:var(--pink);--x:3%;--y:92%;--s:26vmin;--r:14deg;--k:.14"><use href="#i-arrows"/></svg>
-    <svg class="about__form" style="--c:var(--coral);--x:97%;--y:4%;--s:20vmin;--r:24deg;--k:.08"><use href="#i-drop"/></svg>
-  </div>
+<section class="about" id="about" data-theme="field" style="--field:var(--green);--on:var(--paper)">
   <div class="wrap about__grid">
-    <h2 class="h2 about__title reveal"><span>Наука</span> <span>належить</span> <em class="about__acc">людям</em></h2>
+    <h2 class="h2 about__title reveal">Наука<br>належить<br><em class="about__acc">людям</em></h2>
     <div class="about__body">
       <p class="lead split">
         INSCIENCE популяризує науку і доказову медицину та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо
-        <span class="kw">українських вчених<i class="kw__shape" style="--c:var(--blue)"><svg><use href="#i-star"/></svg></i></span>
+        українських вчених
         та
-        <span class="kw">лікарів/ок<i class="kw__shape" style="--c:var(--purple)"><svg><use href="#i-heart"/></svg></i></span>
+        лікарів/ок
         видимими і розвиваємо
-        <span class="kw">критичне мислення<i class="kw__shape" style="--c:var(--coral)"><svg><use href="#i-eye"/></svg></i></span>
+        критичне мислення
         через науковий підхід до пізнання світу.
       </p>
       <a href="#" class="link reveal">Про INSCIENCE <span aria-hidden="true">→</span></a>
+    </div>
+    <!-- Чотири форми напрямків (001 Form) — рівно над колонками дисків; на скролі кожна падає у свій диск і стає патерном -->
+    <div class="about__row" aria-hidden="true">
+      <svg class="about__form" data-dir="flow"><use href="#i-eye"/></svg>
+      <svg class="about__form" data-dir="intersection"><use href="#i-flower"/></svg>
+      <svg class="about__form" data-dir="grid"><use href="#i-arrows"/></svg>
+      <svg class="about__form" data-dir="density"><use href="#i-heart"/></svg>
     </div>
   </div>
 </section>
@@ -129,14 +126,13 @@
 <section class="dirs" id="directions" data-theme="light">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal">Одна мета.<br>Чотири напрямки</h2>
+      <h2 class="h2 reveal">Одна мета. Чотири напрямки</h2>
     </div>
 
     <div class="dirs__grid">
       <a class="dir" href="#projects" data-dir="flow" style="--c:var(--blue);--i:0">
         <span class="dir__art" aria-hidden="true">
           <span class="dir__disc dir__disc--flow"></span>
-          <span class="dir__badge"><svg><use href="#i-eye"/></svg></span>
         </span>
         <span class="dir__name">Популяризація науки для дітей і дорослих</span>
         <span class="dir__more"><span data-count>4 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
@@ -144,7 +140,6 @@
       <a class="dir" href="#projects" data-dir="intersection" style="--c:var(--lime);--i:1">
         <span class="dir__art" aria-hidden="true">
           <span class="dir__disc dir__disc--intersection"></span>
-          <span class="dir__badge"><svg><use href="#i-flower"/></svg></span>
         </span>
         <span class="dir__name">Гендерна рівність у&nbsp;STEM</span>
         <span class="dir__more"><span data-count>1 проєкт</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
@@ -152,7 +147,6 @@
       <a class="dir" href="#projects" data-dir="grid" style="--c:var(--pink);--i:2">
         <span class="dir__art" aria-hidden="true">
           <span class="dir__disc dir__disc--grid"></span>
-          <span class="dir__badge"><svg><use href="#i-arrows"/></svg></span>
         </span>
         <span class="dir__name">Співпраця науки, бізнесу та держави</span>
         <span class="dir__more"><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
@@ -160,7 +154,6 @@
       <a class="dir" href="#projects" data-dir="density" style="--c:var(--purple);--i:3">
         <span class="dir__art" aria-hidden="true">
           <span class="dir__disc dir__disc--density"></span>
-          <span class="dir__badge"><svg><use href="#i-heart"/></svg></span>
         </span>
         <span class="dir__name">Здоровʼя через доказову профілактику</span>
         <span class="dir__more"><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
@@ -480,18 +473,21 @@
       <div class="support__online">
         <p class="support__lead">
           <span class="support__line">Ваш внесок стає</span>
-          <span class="support__line"><i class="support__ico" style="--c:var(--blue)" aria-hidden="true"><svg><use href="#i-eye"/></svg></i>науковими подіями для дітей,</span>
-          <span class="support__line"><i class="support__ico" style="--c:var(--lime)" aria-hidden="true"><svg><use href="#i-flower"/></svg></i>грантами для науковиць</span>
-          <span class="support__line"><i class="support__ico" style="--c:var(--purple)" aria-hidden="true"><svg><use href="#i-heart"/></svg></i>і доказовою інформацією про здоровʼя.</span>
+          <span class="support__line">науковими подіями для дітей,</span>
+          <span class="support__line">грантами для науковиць</span>
+          <span class="support__line">і доказовою інформацією про здоровʼя.</span>
         </p>
-        <a href="#" class="btn btn--xl btn--lime">Підтримати онлайн <span aria-hidden="true">↗</span></a>
+        <a href="#" class="btn btn--xl btn--lime">Підтримати <span aria-hidden="true">↗</span></a>
       </div>
-      <dl class="req">
-        <div class="req__row"><dt>IBAN</dt><dd data-copy class="req__iban"><span>UA00</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0</span></dd><button class="req__btn" type="button" aria-label="Скопіювати IBAN">Скопіювати</button></div>
-        <div class="req__row"><dt>ЄДРПОУ</dt><dd data-copy>00000000</dd><button class="req__btn" type="button" aria-label="Скопіювати ЄДРПОУ">Скопіювати</button></div>
-        <div class="req__row"><dt>Отримувач</dt><dd data-copy>ГО «INSCIENCE»</dd><button class="req__btn" type="button" aria-label="Скопіювати отримувача">Скопіювати</button></div>
-        <div class="req__row"><dt>Призначення</dt><dd data-copy>Благодійний внесок на статутну діяльність</dd><button class="req__btn" type="button" aria-label="Скопіювати призначення">Скопіювати</button></div>
-      </dl>
+      <div class="support__req">
+        <h3 class="support__label">За реквізитами</h3>
+        <dl class="req">
+          <div class="req__row"><dt>IBAN</dt><dd data-copy class="req__iban"><span>UA00</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0</span></dd><button class="req__btn" type="button" aria-label="Скопіювати IBAN">Скопіювати</button></div>
+          <div class="req__row"><dt>ЄДРПОУ</dt><dd data-copy>00000000</dd><button class="req__btn" type="button" aria-label="Скопіювати ЄДРПОУ">Скопіювати</button></div>
+          <div class="req__row"><dt>Отримувач</dt><dd data-copy>ГО «INSCIENCE»</dd><button class="req__btn" type="button" aria-label="Скопіювати отримувача">Скопіювати</button></div>
+          <div class="req__row"><dt>Призначення</dt><dd data-copy>Благодійний внесок на статутну діяльність</dd><button class="req__btn" type="button" aria-label="Скопіювати призначення">Скопіювати</button></div>
+        </dl>
+      </div>
     </div>
   </div>
 </section>
@@ -537,6 +533,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=11"></script>
+<script src="main.js?v=18"></script>
 </body>
 </html>
