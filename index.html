@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=30">
+  <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
+  <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
 
@@ -13,6 +15,7 @@
 
 <!-- ============ HEADER ============ -->
 <header class="hdr is-mark" data-theme="blue">
+  <div class="hdr__glass" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
   <div class="wrap hdr__row">
     <a href="#top" class="hdr__logo" aria-label="INSCIENCE — на головну"><span class="logo-wm"></span><span class="logo-star"></span></a>
     <nav class="hdr__nav" aria-label="Основна навігація">
@@ -42,17 +45,15 @@
     <a href="#partners">Партнери</a>
   </nav>
   <a href="#support" class="btn btn--xl btn--light menu__cta">Підтримати</a>
+  <p class="menu__lang"><b>UA</b> / <a href="#">EN</a></p>
 </div>
 
 <main id="main" tabindex="-1">
 
 <!-- ============ 1. HERO ============ -->
 <section class="hero" id="top" data-theme="blue">
+  <!-- Картотека: hero закріплений, «Про нас» наїжджає на нього знизу, а hero трохи відступає вглиб -->
   <div class="hero__sticky">
-    <div class="hero__blue"></div>
-    <!-- Зелене коло: розкривається з лінії повіки, коли око кліпнуло, і заливає екран -->
-    <div class="hero__green" aria-hidden="true"></div>
-
     <!-- Прихована наука: великі форми ілюстрацій тон-в-тон (svg поля й лупу з шарами ілюстрацій будує скрипт) -->
     <div class="hero__hidden" aria-hidden="true">
       <div class="hero__field"></div>
@@ -64,7 +65,11 @@
       <div class="hero__logo" aria-hidden="true">
         <span class="hero__wm"></span>
         <span class="hero__slot">
-          <svg class="hero__ico is-on" data-dir="flow"><use href="#i-eye"/></svg>
+          <!-- око: зіниця — окремий шар, щоб дивитися за курсором (форма та сама, що #i-eye) -->
+          <span class="hero__ico is-on" data-dir="flow">
+            <svg viewBox="0 0 156 81"><path fill="currentColor" d="M152.442 32.2171C157.187 36.3437 157.187 43.6979 152.442 47.8245C139.045 59.4675 110.748 80.0416 78.0004 80.0416C45.2528 80.0416 16.956 59.4675 3.55921 47.8245C-1.1864 43.6979 -1.1864 36.3437 3.55921 32.2171C16.956 20.5741 45.2528 0 78.0004 0C110.748 0 139.045 20.5741 152.442 32.2171Z"/></svg>
+            <svg class="hero__pupil" viewBox="0 0 156 81"><circle cx="78" cy="40.0133" r="13.5295"/></svg>
+          </span>
           <svg class="hero__ico" data-dir="intersection"><use href="#i-flower"/></svg>
           <svg class="hero__ico" data-dir="grid"><use href="#i-arrows"/></svg>
           <svg class="hero__ico" data-dir="density"><use href="#i-heart"/></svg>
@@ -77,21 +82,11 @@
         <div class="hero__intro">
           <p>Громадська організація, яка з 2018 року популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.</p>
           <div class="hero__ctas">
-            <a href="#directions" class="btn btn--xl btn--light">Що ми робимо <span aria-hidden="true">↓</span></a>
-            <a href="#support" class="btn btn--xl btn--ghost-light">Підтримати</a>
+            <a href="#directions" class="btn btn--xl btn--ghost-light">Що ми робимо <span aria-hidden="true">↓</span></a>
+            <a href="#support" class="btn btn--xl btn--light">Підтримати</a>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Портал: коло з оком знову росте, і крізь нього відкривається «Про нас» (копію кладе скрипт) -->
-    <div class="hero__portal" aria-hidden="true" inert></div>
-
-    <!-- Око-портал: біле око росте на весь екран, його зіниця — отвір, крізь який видно «Про нас» (path ставить скрипт) -->
-    <svg class="hero__eye" aria-hidden="true"><path fill-rule="evenodd" d="M152.442 32.2171C157.187 36.3437 157.187 43.6979 152.442 47.8245C139.045 59.4675 110.748 80.0416 78.0004 80.0416C45.2528 80.0416 16.956 59.4675 3.55921 47.8245C-1.1864 43.6979 -1.1864 36.3437 3.55921 32.2171C16.956 20.5741 45.2528 0 78.0004 0C110.748 0 139.045 20.5741 152.442 32.2171Z"/></svg>
-
-    <div class="hero__dot" aria-hidden="true">
-      <svg class="hero__dot-ico"><use href="#i-eye"/></svg>
     </div>
   </div>
 </section>
@@ -99,9 +94,10 @@
 <!-- ============ 2. ПРО НАС ============ -->
 <section class="about" id="about" data-theme="field" style="--field:var(--green);--on:var(--paper)">
   <div class="wrap about__grid">
-    <h2 class="h2 about__title reveal">Наука<br>належить<br><em class="about__acc">людям</em></h2>
-    <div class="about__body">
-      <p class="lead split">
+    <h2 class="h2 about__title reveal" data-ln>Наука<br>належить<br><em class="about__acc">людям</em></h2>
+    <!-- лід — рядками з маски: цілий текст для скрінрідера, розбиту на рядки копію будує скрипт (aria-hidden) -->
+    <div class="about__body reveal">
+      <p class="lead" data-ln="measure">
         INSCIENCE популяризує науку і доказову медицину та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо
         українських вчених
         та
@@ -110,53 +106,49 @@
         критичне мислення
         через науковий підхід до пізнання світу.
       </p>
-      <a href="#" class="link reveal">Про INSCIENCE <span aria-hidden="true">→</span></a>
-    </div>
-    <!-- Чотири форми напрямків (001 Form) — рівно над колонками дисків; на скролі кожна падає у свій диск і стає патерном -->
-    <div class="about__row" aria-hidden="true">
-      <svg class="about__form" data-dir="flow"><use href="#i-eye"/></svg>
-      <svg class="about__form" data-dir="intersection"><use href="#i-flower"/></svg>
-      <svg class="about__form" data-dir="grid"><use href="#i-arrows"/></svg>
-      <svg class="about__form" data-dir="density"><use href="#i-heart"/></svg>
+      <a href="#" class="link" data-ln><span class="link__t">Про INSCIENCE</span><span class="link__a" aria-hidden="true">→</span></a>
     </div>
   </div>
+  <!-- Форми розміру футера засипаються з боків і лягають рамкою під текстом (Matter.js). Малює скрипт -->
+  <div class="about__stage" aria-hidden="true"></div>
 </section>
 
 <!-- ============ 3. НАПРЯМКИ ============ -->
 <section class="dirs" id="directions" data-theme="light">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal">Одна мета. Чотири напрямки</h2>
+      <h2 class="h2 reveal" data-ln>Одна мета.<br>Чотири <br class="br-m">напрямки</h2>
     </div>
 
-    <div class="dirs__grid">
+    <!-- посилання веде до першої картки свого напрямку в колоді (скрипт); без JS — до «Проєктів» -->
+    <div class="dirs__grid reveal">
       <a class="dir" href="#projects" data-dir="flow" style="--c:var(--blue);--i:0">
         <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--flow"></span>
+          <span class="dir__disc dir__disc--flow pop"></span>
         </span>
-        <span class="dir__name">Популяризація науки для дітей і дорослих</span>
-        <span class="dir__more"><span data-count>4 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
+        <span class="dir__name" data-ln>Популяризація науки для дітей і дорослих</span>
+        <span class="dir__more" data-ln><span data-count>4 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="intersection" style="--c:var(--lime);--i:1">
         <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--intersection"></span>
+          <span class="dir__disc dir__disc--intersection pop"></span>
         </span>
-        <span class="dir__name">Гендерна рівність у&nbsp;STEM</span>
-        <span class="dir__more"><span data-count>1 проєкт</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
+        <span class="dir__name" data-ln>Гендерна рівність у&nbsp;STEM</span>
+        <span class="dir__more" data-ln><span data-count>1 проєкт</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="grid" style="--c:var(--pink);--i:2">
         <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--grid"></span>
+          <span class="dir__disc dir__disc--grid pop"></span>
         </span>
-        <span class="dir__name">Співпраця науки, бізнесу та держави</span>
-        <span class="dir__more"><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
+        <span class="dir__name" data-ln>Співпраця науки, бізнесу та держави</span>
+        <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="density" style="--c:var(--purple);--i:3">
         <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--density"></span>
+          <span class="dir__disc dir__disc--density pop"></span>
         </span>
-        <span class="dir__name">Здоровʼя через доказову профілактику</span>
-        <span class="dir__more"><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">→</span></span>
+        <span class="dir__name" data-ln>Здоровʼя через доказову профілактику</span>
+        <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
     </div>
   </div>
@@ -164,18 +156,19 @@
 
 <!-- ============ 4. ПРОЄКТИ ============ -->
 <section class="projects" id="projects" data-theme="light">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2 class="h2 reveal">Наші проєкти</h2>
-    </div>
-  </div>
 
   <!-- Колода: картки складені стопкою, задні видно віялом праворуч (клік — до картки); на скрол наступна вилазить з-під стопки й лягає зверху.
        «Детальніше» на картках — UI-мікрокопі, потрібне погодження -->
   <div class="pdeck">
     <div class="pdeck__stage">
+      <!-- заголовок — у закріпленій сцені: лишається в кадрі, поки гортаються картки -->
+      <div class="wrap">
+        <div class="sec-head">
+          <h2 class="h2 reveal" data-ln>Наші проєкти</h2>
+        </div>
+      </div>
       <div class="ptrack" role="region" aria-label="Проєкти" tabindex="0">
-        <article class="pcard pcard--flag" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
+        <article class="reveal pcard pcard--flag" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
           <div class="pcard__text">
             <h3 class="pcard__title">INSCIENCE Conference</h3>
             <p class="pcard__desc">Найбільша науково-популярна та deep tech конференція в Україні. Пʼята конференція відбулася 13–14 червня 2026 року в Києві.</p>
@@ -190,11 +183,11 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-clover" src="assets/photos/audience.jpg" alt="Зала конференції INSCIENCE під час виступу">
-              <svg class="pcard__shape pcard__shape--br" aria-hidden="true" style="--c:var(--pink);--s:46%"><use href="#i-arrows"/></svg>
+              <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--paper);--s:29%;--at:66%"><use href="#i-eye"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="intersection" style="--c:var(--coral);--on:var(--ink)">
+        <article class="reveal pcard pcard--ink" data-dirs="intersection" style="--c:var(--coral);--on:var(--ink)">
           <div class="pcard__text">
             <h3 class="pcard__title">Women Led Science</h3>
             <p class="pcard__desc">До $10 000 на дослідження для команд під керівництвом жінок.</p>
@@ -203,11 +196,11 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-star" src="assets/photos/scientist2.jpg" alt="Дослідниця в захисних окулярах">
-              <svg class="pcard__shape pcard__shape--tl" aria-hidden="true" style="--c:var(--purple);--s:34%"><use href="#i-flower"/></svg>
+              <svg class="pop pcard__shape pcard__shape--t" aria-hidden="true" style="--c:var(--lime);--at:68%"><use href="#i-flower"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="density" style="--c:var(--green);--on:#fff">
+        <article class="reveal pcard" data-dirs="density" style="--c:var(--green);--on:#fff">
           <div class="pcard__text">
             <h3 class="pcard__title">Медіа «Бережи себе»</h3>
             <p class="pcard__desc">Платформа доказової інформації про здоровʼя: гайди разом із МОЗ і два подкасти.</p>
@@ -215,12 +208,12 @@
           </div>
           <div class="pcard__media">
             <div class="pcard__frame">
-              <span class="pcard__fig pcard__fig--disc pcard__over" aria-hidden="true"><svg><use href="#i-heart"/></svg></span>
-              <svg class="pcard__shape pcard__shape--tr" aria-hidden="true" style="--c:var(--pink);--s:30%"><use href="#i-drop"/></svg>
+              <span class="pcard__fig pcard__fig--disc pcard__over" aria-hidden="true" style="--c:var(--pink)"><svg><use href="#i-drop"/></svg></span>
+              <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--purple);--at:30%"><use href="#i-heart"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="flow" style="--c:var(--lime);--on:var(--ink)">
+        <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--lime);--on:var(--ink)">
           <div class="pcard__text">
             <h3 class="pcard__title">Science Kids</h3>
             <p class="pcard__desc">STEAM-події для дітей у Харкові, Миколаєві, Запоріжжі, Херсоні та Одесі, а також для дітей ветеранів у Києві.</p>
@@ -235,11 +228,11 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-clover" src="assets/photos/vr.jpg" alt="Учасниця у VR-шоломі на науковій події">
-              <svg class="pcard__shape pcard__shape--bl" aria-hidden="true" style="--c:var(--blue);--s:40%"><use href="#i-planet"/></svg>
+              <svg class="pop pcard__shape pcard__shape--b" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:32%;--o:40%"><use href="#i-eye"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="density" style="--c:var(--maroon);--on:#fff">
+        <article class="reveal pcard" data-dirs="density" style="--c:var(--maroon);--on:#fff">
           <div class="pcard__text">
             <h3 class="pcard__title">Осередки здоровʼя</h3>
             <p class="pcard__desc">Безоплатні зустрічі з лікарями про профілактику серцево-судинних захворювань.</p>
@@ -247,15 +240,15 @@
           </div>
           <div class="pcard__media">
             <div class="pcard__frame">
-              <span class="pcard__fig pcard__fig--form pcard__over" aria-hidden="true" style="--on:var(--pink)">
-                <svg class="pcard__fig-form"><use href="#i-heart"/></svg>
+              <span class="pcard__fig pcard__fig--form pcard__over" aria-hidden="true" style="--on:var(--lime)">
+                <svg class="pcard__fig-form"><use href="#i-clover"/></svg>
                 <svg class="pcard__fig-ico"><use href="#i-drop"/></svg>
               </span>
-              <svg class="pcard__shape pcard__shape--tl" aria-hidden="true" style="--c:var(--lime);--s:32%"><use href="#i-molecule"/></svg>
+              <svg class="pop pcard__shape pcard__shape--t" aria-hidden="true" style="--c:var(--purple);--at:26%"><use href="#i-heart"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="flow" style="--c:var(--hotpink);--on:var(--ink)">
+        <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--hotpink);--on:var(--ink)">
           <div class="pcard__text">
             <h3 class="pcard__title">STEM-освіта для дітей</h3>
             <p class="pcard__desc">Безплатний курс із 12 вебінарів для освітян; з 2025 року — навчання вчителів у 10 громадах.</p>
@@ -264,11 +257,11 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-hash" src="assets/photos/scientist.jpg" alt="Науковиця біля мікроскопа">
-              <svg class="pcard__shape pcard__shape--br" aria-hidden="true" style="--c:var(--blue);--s:36%"><use href="#i-eye"/></svg>
+              <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:72%"><use href="#i-eye"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="grid" style="--c:var(--purple);--on:#fff">
+        <article class="reveal pcard" data-dirs="grid" style="--c:var(--purple);--on:#fff">
           <div class="pcard__text">
             <h3 class="pcard__title">INSCIENCE Business</h3>
             <p class="pcard__desc">Допомагає науковцям і бізнесу разом створювати наукоємні технології.</p>
@@ -277,11 +270,11 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-drop" src="assets/photos/speaker.jpg" alt="Спікерка на сцені MacPaw Space">
-              <svg class="pcard__shape pcard__shape--tl" aria-hidden="true" style="--c:var(--lime);--s:38%"><use href="#i-infinity"/></svg>
+              <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--pink);--at:70%"><use href="#i-arrows"/></svg>
             </div>
           </div>
         </article>
-        <article class="pcard" data-dirs="flow" style="--c:var(--pink);--on:var(--ink)">
+        <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--pink);--on:var(--ink)">
           <div class="pcard__text">
             <h3 class="pcard__title">Science Teens</h3>
             <p class="pcard__desc">Профорієнтаційні зустрічі підлітків із науковцями та науковицями, за підтримки МОН.</p>
@@ -294,20 +287,22 @@
           <div class="pcard__media">
             <div class="pcard__frame">
               <img class="pcard__photo pcard__over mask-circle" src="assets/photos/team.jpg" alt="Учасники Science Teens біля конференції">
-              <svg class="pcard__shape pcard__shape--bl" aria-hidden="true" style="--c:var(--purple);--s:34%"><use href="#i-burst"/></svg>
+              <svg class="pop pcard__shape pcard__shape--b" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:30%;--o:40%"><use href="#i-eye"/></svg>
             </div>
           </div>
         </article>
       </div>
-      <div class="pdeck__foot">
-        <a href="#" class="link pdeck__all">Усі проєкти <span aria-hidden="true">→</span></a>
-        <div class="pdeck__nav">
+      <div class="tfoot pdeck__foot">
+        <a href="#" class="link pdeck__all"><span class="link__t">Усі проєкти</span><span class="link__a" aria-hidden="true">→</span></a>
+        <div class="tfoot__nav">
           <!-- aria-label кнопок — UI-мікрокопі, потрібне погодження -->
           <button class="abtn pdeck__btn" type="button" data-step="-1" aria-label="Попередній проєкт" style="--c:var(--pink)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-molecule"/></svg><span aria-hidden="true">←</span></button>
-          <span class="pdeck__count" aria-hidden="true"><b>01</b> / <span class="pdeck__total">08</span></span>
+          <span class="tfoot__count pdeck__count" aria-hidden="true"><b>01</b> / <span class="pdeck__total">08</span></span>
           <button class="abtn pdeck__btn" type="button" data-step="1" aria-label="Наступний проєкт" style="--c:var(--lime)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-planet"/></svg><span aria-hidden="true">→</span></button>
         </div>
       </div>
+      <!-- позиція колоди для скрінрідера — заголовок поточної картки (ставить скрипт) -->
+      <p class="sr-only pdeck__live" aria-live="polite"></p>
     </div>
   </div>
 </section>
@@ -316,116 +311,120 @@
 <section class="news" id="news" data-theme="light">
   <div class="wrap">
     <div class="sec-head sec-head--line">
-      <h2 class="h2 reveal">Що нового</h2>
-      <div class="news__nav reveal">
-        <a href="#" class="link">Усі новини <span aria-hidden="true">→</span></a>
-        <!-- aria-label кнопок — UI-мікрокопі, потрібне погодження -->
-        <button class="rbtn news__btn" type="button" data-step="-1" aria-controls="news-track" aria-label="Попередні новини"><span aria-hidden="true">←</span></button>
-        <button class="rbtn news__btn" type="button" data-step="1" aria-controls="news-track" aria-label="Наступні новини"><span aria-hidden="true">→</span></button>
-      </div>
+      <h2 class="h2 reveal" data-ln>Що нового</h2>
     </div>
 
-    <div class="ntrack" id="news-track" role="region" aria-label="Новини" tabindex="0">
-      <article class="newscard" style="--nc:var(--lime);--mask:url(assets/icons/clover.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p1.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <time class="newscard__date" datetime="2026-10">Жовтень 2026</time>
+    <div class="ntrack reveal" id="news-track" role="region" aria-label="Новини" tabindex="0">
+      <article class="newscard" style="--i:0;--nc:var(--green);--mask:url(assets/icons/clover.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n1.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-10-14">14.10.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Олена Скирта та Анна Орєхова перейшли у наглядову раду INSCIENCE</a></h3>
           <p>Засновниці організації продовжать працювати з командою в новій ролі — стратегічно, з фокусом на розвиток і партнерства.</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
         </div>
       </article>
-      <!-- Заглушка: замінити реальною новиною -->
-      <article class="newscard" style="--nc:var(--pink);--mask:url(assets/icons/flower.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p2.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <p class="newscard__date">Місяць 2026</p>
-          <h3 class="newscard__title"><a class="newscard__link" href="#">Заголовок новини</a></h3>
-          <p>Короткий опис новини</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
+      <!-- Мок-контент: замінити реальною новиною -->
+      <article class="newscard" style="--i:1;--nc:var(--lime);--mask:url(assets/icons/flower.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n2.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-10-02">02.10.2026</time>
+          <h3 class="newscard__title"><a class="newscard__link" href="#">Відкрили реєстрацію на INSCIENCE Conference 2026</a></h3>
+          <p>Два дні лекцій, дискусій і нетворкінгу з дослідниками з України та світу. Кількість місць обмежена.</p>
         </div>
       </article>
-      <!-- Заглушка: замінити реальною новиною -->
-      <article class="newscard" style="--nc:var(--purple);--mask:url(assets/icons/star.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p3.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <p class="newscard__date">Місяць 2026</p>
-          <h3 class="newscard__title"><a class="newscard__link" href="#">Заголовок новини</a></h3>
-          <p>Короткий опис новини</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
+      <!-- Мок-контент: замінити реальною новиною -->
+      <article class="newscard" style="--i:2;--nc:var(--maroon);--mask:url(assets/icons/star.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n3.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-09-24">24.09.2026</time>
+          <h3 class="newscard__title"><a class="newscard__link" href="#">Women Led Science: оголошуємо 12 учасниць нового сезону</a></h3>
+          <p>Дослідниці з восьми міст пройдуть менторську програму й підготують власні науково-популярні проєкти.</p>
         </div>
       </article>
-      <!-- Заглушка: замінити реальною новиною -->
-      <article class="newscard" style="--nc:var(--coral);--mask:url(assets/icons/heart.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p4.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <p class="newscard__date">Місяць 2026</p>
-          <h3 class="newscard__title"><a class="newscard__link" href="#">Заголовок новини</a></h3>
-          <p>Короткий опис новини</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
+      <!-- Мок-контент: замінити реальною новиною -->
+      <article class="newscard" style="--i:3;--nc:var(--purple);--mask:url(assets/icons/heart.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n4.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-09-11">11.09.2026</time>
+          <h3 class="newscard__title"><a class="newscard__link" href="#">Science Kids повертається до шкіл</a></h3>
+          <p>Цієї осені експериментальні уроки з фізики та біології пройдуть у 40 школах по всій країні.</p>
         </div>
       </article>
-      <!-- Заглушка: замінити реальною новиною -->
-      <article class="newscard" style="--nc:var(--blue);--mask:url(assets/icons/drop.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p5.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <p class="newscard__date">Місяць 2026</p>
-          <h3 class="newscard__title"><a class="newscard__link" href="#">Заголовок новини</a></h3>
-          <p>Короткий опис новини</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
+      <!-- Мок-контент: замінити реальною новиною -->
+      <article class="newscard" style="--i:4;--nc:var(--brown);--mask:url(assets/icons/drop.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n5.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-08-28">28.08.2026</time>
+          <h3 class="newscard__title"><a class="newscard__link" href="#">«Бережи себе» запускає подкаст про здоровʼя без міфів</a></h3>
+          <p>Щотижня — розмова з лікарем або дослідницею про те, що справді працює, а що ні.</p>
         </div>
       </article>
-      <!-- Заглушка: замінити реальною новиною -->
-      <article class="newscard" style="--nc:var(--green);--mask:url(assets/icons/burst.svg)">
-        <div class="newscard__media"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/p6.jpg" alt="" loading="lazy" draggable="false"></div></div>
-        <div class="newscard__body">
-          <p class="newscard__date">Місяць 2026</p>
-          <h3 class="newscard__title"><a class="newscard__link" href="#">Заголовок новини</a></h3>
-          <p>Короткий опис новини</p>
-          <span class="link newscard__more" aria-hidden="true">Читати <span>→</span></span>
+      <!-- Мок-контент: замінити реальною новиною -->
+      <article class="newscard" style="--i:5;--nc:var(--hotpink);--mask:url(assets/icons/burst.svg)">
+        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n6.jpg" alt="" loading="lazy" draggable="false"></div></div>
+        <div class="newscard__body pop">
+          <time class="newscard__date" datetime="2026-08-15">15.08.2026</time>
+          <h3 class="newscard__title"><a class="newscard__link" href="#">Нові осередки здоровʼя відкрилися в Харкові та Дніпрі</a></h3>
+          <p>Безкоштовні консультації, скринінги й лекції від медиків — для всіх охочих.</p>
         </div>
       </article>
+    </div>
+    <div class="tfoot">
+      <a href="#" class="link"><span class="link__t">Усі новини</span><span class="link__a" aria-hidden="true">→</span></a>
+      <div class="tfoot__nav">
+        <!-- aria-label кнопок — UI-мікрокопі, потрібне погодження -->
+        <button class="abtn news__btn" type="button" data-step="-1" aria-controls="news-track" aria-label="Попередні новини" style="--c:var(--pink)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-molecule"/></svg><span aria-hidden="true">←</span></button>
+        <span class="tfoot__count news__count" aria-hidden="true"><b>01</b> / <span>06</span></span>
+        <button class="abtn news__btn" type="button" data-step="1" aria-controls="news-track" aria-label="Наступні новини" style="--c:var(--lime)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-planet"/></svg><span aria-hidden="true">→</span></button>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============ 7. МЕДІА ============ -->
 <!-- Заглушки: реальні видання, але матеріали й описи умовні — замінити справжніми посиланнями. Секція ховається, якщо карток менше трьох -->
-<section class="media" id="media" data-theme="field" style="--field:var(--lime);--on:var(--ink)">
+<section class="media" id="media" data-theme="field" style="--field:var(--lime);--on:var(--ink);--off:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal">Про нас пишуть</h2>
+      <h2 class="h2 reveal" data-ln>Про нас <br class="br-m">пишуть</h2>
     </div>
-    <ul class="mgrid">
-      <li><a class="mcard" href="https://www.pravda.com.ua/" target="_blank" rel="noopener">
+    <!-- «нова вкладка» (sr-only) — UI-мікрокопі, потрібне погодження -->
+    <ul class="mgrid reveal">
+      <li class="pop"><a class="mcard" href="https://www.pravda.com.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/up.svg" alt="Українська правда" style="--h:26px" draggable="false"></span>
         <span class="mcard__text">Пʼята INSCIENCE Conference: 1 500+ учасників і 60+ стартапів у Києві</span>
         <span class="mcard__meta"><span>Червень 2026</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li><a class="mcard" href="https://forbes.ua/" target="_blank" rel="noopener">
+      <li class="pop"><a class="mcard" href="https://forbes.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/forbes.svg" alt="Forbes Україна" style="--h:40px" draggable="false"></span>
         <span class="mcard__text">INSCIENCE Business: як науковці й бізнес разом створюють наукоємні технології</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li><a class="mcard" href="https://suspilne.media/" target="_blank" rel="noopener">
+      <li class="pop"><a class="mcard" href="https://suspilne.media/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/suspilne.svg" alt="Суспільне" style="--h:40px" draggable="false"></span>
         <span class="mcard__text">Science Kids: STEAM-події для дітей у Харкові, Миколаєві, Запоріжжі, Херсоні та Одесі</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li><a class="mcard" href="https://nv.ua/" target="_blank" rel="noopener">
+      <li class="pop"><a class="mcard" href="https://nv.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img class="is-tone" src="assets/logos/media/nv.svg" alt="NV" style="--h:56px" draggable="false"></span>
         <span class="mcard__text">Women Led Science: до $10 000 на дослідження для команд під керівництвом жінок</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li><a class="mcard" href="https://hromadske.ua/" target="_blank" rel="noopener">
+      <li class="pop"><a class="mcard" href="https://hromadske.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img class="is-tone" src="assets/logos/media/hromadske.svg" alt="Громадське" style="--h:52px" draggable="false"></span>
         <span class="mcard__text">Осередки здоровʼя: безоплатні зустрічі з лікарями у прифронтових містах</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li><a class="mcard" href="https://kyivindependent.com/" target="_blank" rel="noopener">
+      <li class="pop"><a class="mcard" href="https://kyivindependent.com/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/kyivindependent.svg" alt="The Kyiv Independent" style="--h:34px" draggable="false"></span>
         <span class="mcard__text">Як INSCIENCE робить українських вчених і лікарів видимими</span>
         <span class="mcard__meta"><span>2026</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
+        <span class="sr-only"> (нова вкладка)</span>
       </a></li>
     </ul>
   </div>
@@ -436,10 +435,10 @@
 <section class="partners" id="partners" data-theme="light">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal">Разом з нами</h2>
+      <h2 class="h2 reveal" data-ln>Разом <br class="br-m">з нами</h2>
     </div>
   </div>
-  <div class="marquee" role="region" aria-label="Партнери" tabindex="0">
+  <div class="marquee reveal" role="region" aria-label="Партнери" tabindex="0">
     <div class="marquee__track">
       <ul class="marquee__list">
         <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="МОН України" style="--h:78px" draggable="false"></li>
@@ -461,32 +460,40 @@
       </ul>
     </div>
   </div>
+  <div class="wrap tfoot partners__foot">
+    <!-- aria-label — UI-мікрокопі, потрібне погодження -->
+    <button class="abtn marquee__toggle" type="button" aria-pressed="false" aria-label="Зупинити стрічку партнерів" style="--c:var(--lime)">
+      <svg class="abtn__shape" aria-hidden="true"><use href="#i-clover"/></svg><span class="marquee__icon" aria-hidden="true"></span>
+    </button>
+  </div>
 </section>
 
 <!-- ============ 9. ЯК ПІДТРИМАТИ ============ -->
 <section class="support" id="support" data-theme="blue">
-  <div class="support__ring" aria-hidden="true"></div>
   <div class="support__bg"></div>
-  <div class="wrap support__inner">
-    <h2 class="h2 support__title">Зроби науку <em class="support__acc">видимою</em><br><em class="support__acc">разом</em> з нами</h2>
+  <div class="wrap support__inner reveal" data-manual>
+    <h2 class="h2 support__title" data-ln>Зроби науку <br class="br-m"><em class="support__acc">видимою</em><br><em class="support__acc">разом</em> з нами</h2>
     <div class="support__grid">
       <div class="support__online">
-        <p class="support__lead">
+        <p class="support__lead" data-ln="kids">
           <span class="support__line">Ваш внесок стає</span>
           <span class="support__line">науковими подіями для дітей,</span>
           <span class="support__line">грантами для науковиць</span>
           <span class="support__line">і доказовою інформацією про здоровʼя.</span>
         </p>
-        <a href="#" class="btn btn--xl btn--lime">Підтримати <span aria-hidden="true">↗</span></a>
+        <!-- ↗ — зовнішня оплата: з реальним посиланням додати target="_blank" rel="noopener" -->
+        <a href="#" class="btn btn--xl btn--lime" data-ln>Підтримати <span aria-hidden="true">↗</span></a>
       </div>
       <div class="support__req">
         <h3 class="support__label">За реквізитами</h3>
         <dl class="req">
-          <div class="req__row"><dt>IBAN</dt><dd data-copy class="req__iban"><span>UA00</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0</span></dd><button class="req__btn" type="button" aria-label="Скопіювати IBAN">Скопіювати</button></div>
-          <div class="req__row"><dt>ЄДРПОУ</dt><dd data-copy>00000000</dd><button class="req__btn" type="button" aria-label="Скопіювати ЄДРПОУ">Скопіювати</button></div>
-          <div class="req__row"><dt>Отримувач</dt><dd data-copy>ГО «INSCIENCE»</dd><button class="req__btn" type="button" aria-label="Скопіювати отримувача">Скопіювати</button></div>
-          <div class="req__row"><dt>Призначення</dt><dd data-copy>Благодійний внесок на статутну діяльність</dd><button class="req__btn" type="button" aria-label="Скопіювати призначення">Скопіювати</button></div>
+          <div class="req__row"><dt>IBAN</dt><dd data-copy class="req__iban"><span>UA00</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0000</span> <span>0</span></dd><button class="req__btn" type="button"><span class="req__btn-t">Скопіювати</span><span class="sr-only"> IBAN</span></button></div>
+          <div class="req__row"><dt>ЄДРПОУ</dt><dd data-copy>00000000</dd><button class="req__btn" type="button"><span class="req__btn-t">Скопіювати</span><span class="sr-only"> ЄДРПОУ</span></button></div>
+          <div class="req__row"><dt>Отримувач</dt><dd data-copy>ГО «INSCIENCE»</dd><button class="req__btn" type="button"><span class="req__btn-t">Скопіювати</span><span class="sr-only"> отримувача</span></button></div>
+          <div class="req__row"><dt>Призначення</dt><dd data-copy>Благодійний внесок на статутну діяльність</dd><button class="req__btn" type="button"><span class="req__btn-t">Скопіювати</span><span class="sr-only"> призначення</span></button></div>
         </dl>
+        <!-- стан копіювання для скрінрідера; текст помилки — UI-мікрокопі, потрібне погодження -->
+        <p class="sr-only req__status" role="status" aria-live="polite"></p>
       </div>
     </div>
   </div>
@@ -533,6 +540,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=18"></script>
+<script src="main.js?v=30"></script>
 </body>
 </html>

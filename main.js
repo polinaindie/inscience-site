@@ -5,9 +5,8 @@
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const easeOut = t => 1 - Math.pow(1 - t, 3);
-  const easeOutBack = (t, s = 1.70158) => 1 + (s + 1) * Math.pow(t - 1, 3) + s * Math.pow(t - 1, 2);
   const range = (p, a, b) => clamp((p - a) / (b - a));   // відрізок [a, b] прогресу → 0…1
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* ---------- 1. Спрайт іконок брендбуку ---------- */
@@ -32,6 +31,43 @@
     sprite.appendChild(sym);
   }))).catch(err => console.warn('icons', err));
 
+  // Силует кожної форми для фізики (футер, «Про нас»): точки контуру → опукла оболонка (в одиницях viewBox).
+  // Рахуємо один раз, коли спрайт готовий
+  let outlinesMemo = null;
+  const getOutlines = () => {
+    if (outlinesMemo) return outlinesMemo;
+    const { Vertices } = Matter;
+    const probe = document.createElementNS(NS, 'svg');
+    probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden';
+    document.body.appendChild(probe);
+    const outlines = {};
+    ICONS.forEach(name => {
+      const sym = document.getElementById(`i-${name}`);
+      if (!sym) return;
+      const [vx, vy, vw, vh] = sym.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+      probe.setAttribute('width', vw); probe.setAttribute('height', vh);
+      const g = document.createElementNS(NS, 'g');
+      g.innerHTML = sym.innerHTML;
+      probe.appendChild(g);
+      const els = $$('path, circle, ellipse, rect, polygon', g).filter(el =>
+        !el.closest('clipPath, defs, mask') && el.getAttribute('fill') !== 'none' && !el.hasAttribute('style'));
+      const lens = els.map(el => el.getTotalLength());
+      const total = lens.reduce((a, b) => a + b, 0) || 1;
+      const pts = [];
+      els.forEach((el, k) => {
+        const m = el.getCTM(), n = Math.max(12, Math.round(lens[k] / total * 120));
+        for (let i = 0; i < n; i++) {
+          const p = el.getPointAtLength(lens[k] * i / n).matrixTransform(m);
+          pts.push({ x: p.x - vx, y: p.y - vy });
+        }
+      });
+      g.remove();
+      if (pts.length >= 3) outlines[name] = { w: vw, h: vh, hull: Vertices.hull(pts) };
+    });
+    probe.remove();
+    return (outlinesMemo = outlines);
+  };
+
   /* ---------- 2. Іконка в логотипі: один цикл око → квітка → стрілки → серце → око і стоп (WCAG 2.2.2) ---------- */
   const heroIcons = $$('.hero__ico');
   let heroIdx = 0, heroLeft = 0, heroTimer = 0, heroHp = 0;
@@ -54,34 +90,115 @@
   heroCycle();
   $('.hero__logo').addEventListener('mouseenter', () => heroCycle(250));
 
-  /* ---------- 3. Розбивка тексту на слова для появи ---------- */
-  $$('.split').forEach(el => {
-    let i = 0;
-    const walk = node => {
-      [...node.childNodes].forEach(n => {
-        if (n.nodeType === 3) {
-          const frag = document.createDocumentFragment();
-          n.textContent.split(/(\s+)/).forEach(part => {
-            if (!part) return;
-            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(' ')); return; }
-            const s = document.createElement('span');
-            s.className = 'w'; s.style.setProperty('--i', i++); s.textContent = part;
-            frag.appendChild(s);
-          });
-          n.replaceWith(frag);
-        } else if (n.nodeType === 1) {
-          walk(n);
-        }
-      });
-    };
-    walk(el);
-  });
+  // «Робимо науку видимою» — по висоті блоку «текст + кнопки» (у дві колонки; на мобільному гасло над текстом — розмір з CSS)
+  const heroClaim = $('.hero__claim'), heroIntro = $('.hero__intro');
+  const twoCols = matchMedia('(min-width: 761px)');
+  const fitClaim = () => {
+    heroClaim.style.removeProperty('--claim-fs');
+    if (!twoCols.matches) return;
+    const H = heroIntro.getBoundingClientRect().height;
+    for (let i = 0; i < 2; i++) {   // висота гасла пропорційна кеглю — другий прохід лише уточнює
+      const fs = parseFloat(getComputedStyle(heroClaim).fontSize);
+      heroClaim.style.setProperty('--claim-fs', `${(fs * H / heroClaim.getBoundingClientRect().height).toFixed(2)}px`);
+    }
+  };
+  new ResizeObserver(fitClaim).observe(heroIntro);
+  document.fonts.ready.then(fitClaim);
 
-  /* ---------- 4. Поява при скролі ---------- */
+  /* ---------- 3. Рядки тексту для появи з маски ---------- */
+  // [data-ln] — джерело рядків: за <br> — рядок на відрізок; "measure" — абзац міряємо й ділимо на рядки
+  // (розбита копія aria-hidden, цілий текст — для скрінрідера); "kids" — рядок на кожну дочірню частину;
+  // посилання й кнопки — цілим рядком ззовні. Індекс рядка (--ln) наскрізний у межах свого .reveal: крок 75 мс
+  const mk = (tag, cls) => Object.assign(document.createElement(tag), { className: cls });
+  const lineOf = (nodes, cls = 'ln') => {
+    const ln = mk('span', cls);
+    ln.appendChild(mk('span', 'ln__i')).append(...nodes);
+    return ln;
+  };
+  const lnCount = new Map();   // .reveal → скільки рядків у ньому вже є
+  const lnIndex = el => {
+    const root = el.closest('.reveal') || el, i = lnCount.get(root) || 0;
+    lnCount.set(root, i + 1);
+    return i;
+  };
+  const withLn = (ln, i) => { ln.style.setProperty('--ln', i); return ln; };
+  // абзац без <br>: слова в рядок → де браузер переносить, там і межа рядка; перебудова — лише коли змінилась ширина
+  const measureLines = el => {
+    if (!el._vis) {
+      el._text = el.textContent.replace(/\s+/g, ' ').trim();
+      el._vis = mk('span', '');
+      el._vis.setAttribute('aria-hidden', 'true');
+      el.replaceChildren(Object.assign(mk('span', 'sr-only'), { textContent: el._text }), el._vis);
+      el._w = -1;
+    }
+    const w = el.clientWidth;
+    if (w === el._w) return;
+    el._w = w;
+    const words = el._text.split(' ').map(t => Object.assign(document.createElement('span'), { textContent: t }));
+    el._vis.replaceChildren(...words.flatMap((s, i) => i ? [' ', s] : [s]));
+    const lines = [];
+    let top = -1e9;
+    words.forEach(s => { if (s.offsetTop > top + 2) { lines.push([]); top = s.offsetTop; } lines.at(-1).push(s.textContent); });
+    if (el._ln0 == null) { el._ln0 = lnIndex(el); for (let k = 1; k < lines.length; k++) lnIndex(el); }
+    el._vis.replaceChildren(...lines.map((l, k) => withLn(lineOf([l.join(' ')], 'ln ln--m'), el._ln0 + k)));
+  };
+  // ручні розбивки: <br class="br-d"> — лише на desktop, <br class="br-m"> — лише на мобільному (перед ним — пробіл,
+  // щоб без розриву слова не злиплися); на межі 760 px рядки перебудовуються, індекси — ті самі
+  const brLines = el => {
+    const off = twoCols.matches ? 'br-m' : 'br-d', groups = [[]];
+    el._src.forEach(n => (n.nodeName !== 'BR' ? groups.at(-1).push(n) : n.classList.contains(off) || groups.push([])));
+    const lines = groups.filter(g => g.some(n => n.nodeType === 1 || n.textContent.trim()));
+    el.replaceChildren(...lines.map((g, k) => withLn(lineOf(g), el._ln0 + k)));
+  };
+  const brSplit = [];
+  $$('[data-ln]').forEach(el => {
+    const mode = el.dataset.ln;
+    if (mode === 'measure') {
+      measureLines(el);
+      new ResizeObserver(() => measureLines(el)).observe(el);
+      document.fonts?.ready.then(() => { el._w = -1; measureLines(el); });
+    } else if (mode === 'kids') {
+      [...el.children].forEach(c => c.replaceChildren(withLn(lineOf([...c.childNodes]), lnIndex(el))));
+    } else if (el.matches('a, button')) {
+      const ln = withLn(lineOf([]), lnIndex(el));
+      el.before(ln);
+      ln.firstChild.append(el);
+    } else {
+      el._src = [...el.childNodes];
+      el._ln0 = lnIndex(el);   // рядків резервуємо стільки, скільки в довшому з двох варіантів
+      const n = cls => el._src.filter(c => c.nodeName === 'BR' && !c.classList.contains(cls)).length;
+      for (let k = Math.max(n('br-m'), n('br-d')); k > 0; k--) lnIndex(el);
+      if (el._src.some(c => c.nodeName === 'BR' && c.className)) brSplit.push(el);
+      brLines(el);
+    }
+  });
+  twoCols.addEventListener('change', () => brSplit.forEach(brLines));
+
+  /* ---------- 4. Поява при скролі: .reveal → .in (рядки з маски, картки й форми .pop — як у футері) ---------- */
+  // форми й картки йдуть по черзі (крок 70 мс), якщо порядок не задано в розмітці (--i на самій формі чи на її картці).
+  // Елемент треку зі snap не масштабуємо — scale зсуває точки прилипання; у новинах зʼявляються частини картки
+  $$('.reveal').forEach(root => $$('.pop', root).forEach((el, i) => { if (!getComputedStyle(el).getPropertyValue('--i')) el.style.setProperty('--i', i); }));
   const io = new IntersectionObserver(entries => entries.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
   }), { threshold: .18, rootMargin: '0px 0px -8% 0px' });
-  $$('.reveal, .split, .dirs__grid, .pcard').forEach(el => reduce ? el.classList.add('in') : io.observe(el));
+  // [data-manual] — тригер у скрол-циклі («Підтримати»: текст — коли синє коло вже під ним)
+  $$('.reveal:not([data-manual])').forEach(el => reduce ? el.classList.add('in') : io.observe(el));
+  // Прийшли якорем, з меню чи фокусом — вміст секції вже на місці, без «порожнього» кадру
+  const revealNow = scope => {
+    [scope, ...$$('.reveal', scope)].filter(el => el.matches('.reveal:not(.in)')).forEach(el => {
+      if (el.hasAttribute('data-manual')) { el.dataset.instant = ''; return; }
+      el.classList.add('in', 'is-instant');
+      io.unobserve(el);
+    });
+  };
+  const revealHash = hash => {
+    const t = hash.length > 1 && document.getElementById(decodeURIComponent(hash.slice(1)));
+    if (t) revealNow(t.closest('section, footer') || t);
+  };
+  document.addEventListener('click', e => { const a = e.target.closest('a[href^="#"]'); if (a) revealHash(a.getAttribute('href')); });
+  addEventListener('hashchange', () => revealHash(location.hash));
+  if (location.hash) revealHash(location.hash);
+  document.addEventListener('focusin', e => { const r = e.target.closest?.('.reveal:not(.in)'); if (r) revealNow(r); });
 
   /* ---------- 5. Напрямки: лічильники проєктів ---------- */
   const cards = $$('.pcard');
@@ -178,6 +295,40 @@
     }).catch(err => console.warn('pattern', name, err));
   }));
 
+  // Ритм диска — один цикл (.is-play): коли диск уперше в кадрі — каскадом 120 мс зліва направо, далі — від hover,
+  // фокусу й тапу. Нескінченного автоплею немає; поза кадром цикл стоїть на паузі (.is-off)
+  const dirsGrid = $('.dirs__grid');
+  const dirEls = $$('.dir', dirsGrid);
+  let dirsReady = false;
+  const playDir = d => { if (!reduce && dirsReady) d.classList.add('is-play'); };
+  const dirSeen = new Set(), dirDone = new Set();
+  // перший цикл: лише для дисків у кадрі
+  const firstPlay = () => {
+    if (reduce || !dirsReady) return;
+    dirEls.filter(d => dirSeen.has(d) && !dirDone.has(d)).forEach((d, k) => {
+      dirDone.add(d);
+      setTimeout(() => playDir(d), 700 + k * 120);   // диск спершу зʼявляється (.pop), потім оживає
+    });
+  };
+  dirEls.forEach(d => {
+    // цикл скінчився — знімаємо клас, щоб наступний hover / фокус / тап запустив його знову
+    d.addEventListener('animationend', () => {
+      if (!d.getAnimations({ subtree: true }).some(a => a.animationName?.startsWith('pat') && a.playState !== 'finished')) d.classList.remove('is-play');
+    });
+    d.addEventListener('mouseenter', () => playDir(d));
+    d.addEventListener('focus', () => { if (d.matches(':focus-visible')) playDir(d); });
+    d.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') playDir(d); });
+  });
+  if (!reduce) {
+    const dio = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) dirSeen.add(e.target.closest('.dir')); });
+      firstPlay();
+    }, { threshold: .6 });
+    dirEls.forEach(d => dio.observe($('.dir__art', d)));
+    new IntersectionObserver(([e]) => dirsGrid.classList.toggle('is-off', !e.isIntersecting)).observe(dirsGrid);
+    patternsReady.then(() => { dirsReady = true; firstPlay(); });
+  }
+
   // Колода проєктів: на десктопі сцена закріплюється, скрол гортає картки, як спікер — картки свого виступу.
   // Поточна стоїть у слоті, наступні чекають у ряд праворуч (клік по видимій — гортаємо до неї); заїжджаючи,
   // картка лягає поверх попередньої, а пройдені складаються під нею в стопку по центру (трохи менші, з легким нахилом).
@@ -187,6 +338,7 @@
   const deckNum = $('.pdeck__count b', deck);
   const deckTotal = $('.pdeck__total', deck);
   const deckBtns = $$('.pdeck__btn', deck);
+  const deckLive = $('.pdeck__live', deck);   // позиція колоди для скрінрідера — h3 поточної картки
   const deckMQ = matchMedia('(min-width: 900px) and (min-height: 600px)');
   const DECK_STEP = .75;   // висоти екрана скролу на одну картку
   let deckOn = false, deckCards = [], deckW = 0, deckRaw = -1, deckIdx = 0, deckStick = 0;
@@ -208,7 +360,13 @@
     }
     deckRaw = -1;
   }
+  let deckSaid = -1;
   function setDeckIdx(i) {
+    // оголошуємо лише зміну (не початковий стан)
+    if (deckSaid >= 0 && i !== deckSaid) deckLive.textContent = $('.pcard__title', deckCards[i]).textContent;
+    // верхня картка: форма її напрямку виходить за рамку фото
+    if (i !== deckSaid) deckCards.forEach((c, k) => c.classList.toggle('is-top', k === i));
+    deckSaid = i;
     deckIdx = i;
     deckNum.textContent = pad2(i + 1);
     deckBtns[0].disabled = i <= 0;
@@ -250,10 +408,31 @@
   }
   // Позиція скролу, на якій картка i лежить у слоті
   const deckY = i => deckTop() + (deckCards.length > 1 ? i / (deckCards.length - 1) : 0) * deckRun();
-  deckBtns.forEach(b => b.addEventListener('click', () => {
-    const i = clamp(deckIdx + +b.dataset.step, 0, deckCards.length - 1);
-    if (deckOn) scrollTo({ top: deckY(i), behavior: 'smooth' });
-    else ptrack.scrollTo({ left: deckCards[i].offsetLeft - deckCards[0].offsetLeft, behavior: reduce ? 'auto' : 'smooth' });
+  // Перехід до картки i: на десктопі — скрол до її місця в колоді, у нативному ряду — до секції й картки в ряду.
+  // here — перехід зсередини колоди (←/→): сторінка й фокус лишаються на місці
+  const goToCard = (i, here) => {
+    const behavior = reduce ? 'auto' : 'smooth', c = deckCards[i];
+    revealNow($('#projects'));
+    if (deckOn) scrollTo({ top: deckY(i), behavior });
+    else {
+      if (!here) $('#projects').scrollIntoView({ behavior });
+      ptrack.scrollTo({ left: c.offsetLeft - deckCards[0].offsetLeft, behavior });
+    }
+    if (!here) $('.pcard__more', c)?.focus({ preventScroll: true });   // наступний Tab — з цієї картки
+  };
+  deckBtns.forEach(b => b.addEventListener('click', () => goToCard(clamp(deckIdx + +b.dataset.step, 0, deckCards.length - 1), true)));
+  // Форма напрямку біля фото (003 Overlap): велика, плоска, у кодовому кольорі (розмітка); рамка рівної площі —
+  // пропорції зі спрайта, щоб широке око не важило більше за серце
+  spriteReady.then(() => $$('.pcard__shape', deck).forEach(el => {
+    const vb = document.getElementById($('use', el).getAttribute('href').slice(1))?.getAttribute('viewBox')?.split(/[\s,]+/).map(Number);
+    if (vb) el.style.setProperty('--sq', Math.sqrt(vb[2] / vb[3]).toFixed(3));
+  }));
+  // Напрямок веде до своєї першої картки (data-dirs); без JS — до «Проєктів»
+  dirEls.forEach(d => d.addEventListener('click', e => {
+    const i = deckCards.findIndex(c => c.dataset.dirs.split(' ').includes(d.dataset.dir));
+    if (i < 0) return;
+    e.preventDefault();
+    goToCard(i);
   }));
   // Клавіатура: фокус на картці за кадром — догортаємо до неї
   ptrack.addEventListener('focusin', e => {
@@ -278,161 +457,24 @@
   addEventListener('resize', () => { clearTimeout(rzP); rzP = setTimeout(() => { layoutDeck(); renderDeck(true); }, 150); });
 
 
-  /* ---------- 6. Форми напрямків (кільце в «Підтримати») ---------- */
-  const FORMS = [
-    { name: 'flower', c: 'var(--lime)' },
-    { name: 'heart', c: 'var(--purple)' },
-    { name: 'eye', c: 'var(--blue)' },
-  ];
-  // Форма зі спрайта як окремий svg
-  const shapeEl = (name, cls, color) => {
-    const el = document.createElementNS(NS, 'svg');
-    el.setAttribute('class', cls);
-    el.style.setProperty('--c', color);
-    const use = document.createElementNS(NS, 'use');
-    use.setAttribute('href', `#i-${name}`);
-    el.appendChild(use);
-    return el;
-  };
-
-  /* ---------- 7. Скрол-цикл: hero, кульмінація, повернення синього, тема хедера ---------- */
+  /* ---------- 7. Скрол-цикл: hero-картотека, колода, «Підтримати», тема хедера ---------- */
   const hero = $('.hero');
-  const heroBlue = $('.hero__blue');
   const heroContent = $('.hero__content');
-  const heroDot = $('.hero__dot');
   const heroSticky = $('.hero__sticky');
   const heroHidden = $('.hero__hidden');
   const heroField = $('.hero__field');
-  // Спроба: фон hero — лише синій, без форм «Великих світів» і лупи (true — повернути обидва)
+  // Фон hero «Великі світи» і лупа (розділ 11); false — лише синій, без форм і лупи
   const HERO_ART = false;
   heroHidden.hidden = !HERO_ART;
-  const heroPortal = $('.hero__portal');
-  const heroGreen = $('.hero__green');
-  const heroEye = $('.hero__eye');
-  const eyePath = $('path', heroEye);
-  // око зі спрайта: 156×81, зіниця r = 13.53 з центром у (78, 40.01) — це центр занурення
-  const EYE_LENS = eyePath.getAttribute('d'), EYE_CX = 78.0003, EYE_CY = 40.0133, EYE_W = 156, EYE_PUPIL = 13.53;
-  const pupilD = r => `M${EYE_CX - r} ${EYE_CY}A${r} ${r} 0 1 0 ${EYE_CX + r} ${EYE_CY}A${r} ${r} 0 1 0 ${EYE_CX - r} ${EYE_CY}Z`;
-  // кліпання: передчуття → швидке закриття → пауза → розплющення з перельотом (hp → scaleY ока)
-  const blinkY = hp => {
-    if (hp < .48 || hp >= .61) return 1;
-    if (hp < .50) return 1 + .05 * easeOut(range(hp, .48, .50));
-    if (hp < .535) return lerp(1.05, .06, Math.pow(range(hp, .50, .535), 2));
-    if (hp < .555) return .06;
-    return lerp(.06, 1, easeOutBack(range(hp, .555, .61), 1.2));
-  };
   const about = $('#about');
-  const aboutForms = $$('.about__form', about);
-  const dirsSec = $('#directions');
 
-  // Політ «Про нас» → «Напрямки» (001 Form → 002 Repeat → 005 Pattern). Форми стоять рівно над колонками дисків,
-  // тож кожна падає вертикально у свою: на межі секцій набирає колір напрямку, у диску множиться в сітку 3×3
-  // своїх копій, і поверх повтору розкривається патерн. Скрол-скраб лише на десктопі; поки летять — фіксований шар
-  const DIR_COLOR = { flow: 'var(--blue)', intersection: 'var(--lime)', grid: 'var(--pink)', density: 'var(--purple)' };
-  const REP = [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];   // спершу хрест, потім кути
-  const REP_S = .26;   // копія — частка диска (клітинка 1/3)
-  const aflight = document.body.appendChild(document.createElement('div'));
-  aflight.className = 'aflight';
-  aflight.setAttribute('aria-hidden', 'true');
-  aflight.style.setProperty('--field', about.style.getPropertyValue('--field'));
-  const div = (parent, cls) => parent.appendChild(Object.assign(document.createElement('div'), { className: cls }));
-  const flights = aboutForms.map(src => {
-    const dir = $(`.dir[data-dir="${src.dataset.dir}"]`);
-    const name = $('use', src).getAttribute('href').slice(3), c = DIR_COLOR[src.dataset.dir];
-    const k = parseFloat(getComputedStyle(src).getPropertyValue('--k')) || 1;
-    const item = div(aflight, 'aflight__item');
-    const rep = div(item, 'aflight__rep');
-    const copies = REP.map(([x, y]) => {
-      const el = rep.appendChild(shapeEl(name, 'aflight__copy', c));
-      el.style.left = `${50 + x * 100 / 3}%`;
-      el.style.top = `${50 + y * 100 / 3}%`;
-      el.style.width = el.style.height = `${Math.min(REP_S * k, .3) * 100}%`;   // широке око — без дотиків сусідів
-      return el;
-    });
-    // сама форма — дві копії, розрізані межею секцій: над полем кольору паперу, над папером — кольору напрямку
-    const layers = ['field', 'paper'].map(m => {
-      const l = div(item, `aflight__layer aflight__layer--${m}`);
-      l.appendChild(shapeEl(name, 'aflight__form', c));
-      return l;
-    });
-    const pat = div(item, 'aflight__pat');
-    return { src, k, item, rep, copies, layers, forms: layers.map(l => l.firstChild), pat,
-      art: $('.dir__art', dir), disc: $('.dir__disc', dir), d: (+dir.style.getPropertyValue('--i') || 0) * .06 };
-  });
-  // копія готового патерну диска — з власними id, щоб clipPath не перетинались
-  patternsReady.then(() => flights.forEach(f => {
-    const svg = $('.dir__pat', f.disc);
-    if (svg) f.pat.innerHTML = svg.outerHTML.replace(/id="([^"]+)"/g, 'id="$1-fly"').replace(/url\(#([^)]+)\)/g, 'url(#$1-fly)');
-  }));
-  let flightOn = false, flightT = -1;
-  function setFlightOn() {
-    flightOn = !reduce && deckMQ.matches;
-    document.documentElement.classList.toggle('has-aflight', flightOn);
-    flightT = -1;
-    if (!flightOn) {
-      aflight.style.visibility = '';
-      flights.forEach(f => { f.src.style.visibility = ''; f.disc.style.visibility = ''; });
-    }
-  }
-  function renderAboutFlight() {
-    if (!flightOn) return;
-    const ar = about.getBoundingClientRect();
-    // t: 0 — «Про нас» рівно на весь екран (портал щойно відкрився), 1 — «Напрямки» стоять під хедером
-    const run = dirsSec.getBoundingClientRect().top - ar.top - hdr.offsetHeight;
-    const t = clamp(-ar.top / Math.max(run, 1));
-    if (t === flightT) return;
-    flightT = t;
-    const flying = t > 0 && t < 1;
-    aflight.style.visibility = flying ? 'visible' : 'hidden';
-    dirsSec.classList.toggle('is-landed', t >= .82);
-    flights.forEach(f => {
-      f.src.style.visibility = t > 0 ? 'hidden' : '';
-      f.disc.style.visibility = t < 1 ? 'hidden' : '';
-      if (!flying) return;
-      const a = f.src.getBoundingClientRect(), b = f.art.getBoundingClientRect(), w = b.width;
-      const lt = range(t, f.d, f.d + .82);
-      // 001: падіння у своїй колонці через увесь скрол — форма весь час у кадрі (коробка — одразу розміру диска,
-      // форма в ній зменшується до клітинки повтору)
-      const p = ease(lt);
-      const cx = lerp(a.left + a.width / 2, b.left + w / 2, p), cy = lerp(a.top + a.height / 2, b.top + w / 2, p);
-      const top = cy - w / 2;
-      f.item.style.width = f.item.style.height = `${w.toFixed(1)}px`;
-      f.item.style.transform = `translate3d(${(cx - w / 2).toFixed(1)}px,${top.toFixed(1)}px,0)`;
-      const fs = lerp(a.width, w * Math.min(REP_S * f.k, .3), ease(range(lt, .25, .5)));
-      f.forms.forEach(el => { el.style.width = el.style.height = `${fs.toFixed(1)}px`; });
-      // межа «Про нас» / «Напрямки» у координатах коробки
-      const cut = clamp(ar.bottom - top, 0, w);
-      f.layers[0].style.clipPath = `inset(0 0 ${(w - cut).toFixed(1)}px 0)`;
-      f.layers[1].style.clipPath = `inset(${cut.toFixed(1)}px 0 0 0)`;
-      // 002: форма множиться — копії виростають із клітинок, хрест раніше за кути
-      f.copies.forEach((el, i) => {
-        const s0 = .48 + (i < 4 ? 0 : .06);
-        el.style.scale = easeOutBack(range(lt, s0, s0 + .14)).toFixed(3);
-      });
-      // 005: поверх повтору з центру розкривається патерн (той самий жест, що поява дисків); повтор гасне під ним
-      const g = ease(range(lt, .66, .92));
-      f.pat.style.clipPath = `circle(${(g * 50).toFixed(2)}% at 50% 50%)`;
-      f.pat.style.rotate = `${((1 - g) * -90).toFixed(1)}deg`;
-      const o = (1 - range(lt, .86, .95)).toFixed(3);
-      f.rep.style.opacity = o;
-      f.layers.forEach(l => { l.style.opacity = o; });
-    });
-  }
-  setFlightOn();
-  deckMQ.addEventListener('change', () => { setFlightOn(); frame(); });
-  // Фаза 1 стиску: радіус синього кола і масштаб поля модулів (спільні для frame() і розміру поля)
-  const heroRb = (q, diag, rMin) => lerp(diag, rMin, ease(range(q, .12, .85)));
-  const heroFs = q => lerp(1, .3, ease(range(q, .12, .72)));
-  // Поле форм: елемент більший за екран рівно настільки, щоб, стискаючись разом із колом, не показати країв.
+  // Поле форм: елемент більший за екран (запас на будь-яке співвідношення сторін).
   // Форми (розділ 11) малюються в координатах hero; svg поля дивиться на них через viewBox = heroFieldBox
   const heroFieldBox = { x: 0, y: 0, s: 0 };
-  let heroCompose = () => {};   // композицію будує розділ 11, коли ілюстрації завантажені
+  let heroCompose = () => {};   // композицію будує розділ 11, коли спрайт готовий
   function sizeField() {
     const vw = innerWidth, vh = innerHeight, W = heroSticky.clientWidth, H = heroSticky.clientHeight;
-    const diag = Math.hypot(vw, vh) / 2 * 1.04, rMin = Math.min(vw, vh) * .09;
-    let E = diag;
-    for (let q = .12; q < .75; q += .005) E = Math.max(E, heroRb(q, diag, rMin) / heroFs(q));   // після .75 поле вже згасло
-    E = Math.ceil(E) + 2;
+    const E = Math.ceil(Math.hypot(vw, vh) / 2 * 1.04) + 2;
     Object.assign(heroFieldBox, { x: W / 2 - E, y: H / 2 - E, s: 2 * E });
     Object.assign(heroField.style, {
       inset: 'auto', left: `${W / 2 - E}px`, top: `${H / 2 - E}px`, width: `${2 * E}px`, height: `${2 * E}px`,
@@ -441,35 +483,40 @@
   }
   sizeField();
   let heroLensScroll = () => {};   // лупа hero (розділ 11) згортається, коли сцену скролять
-  // Портал: копія сцени «Про нас» (уже в кінцевому стані) — її видно крізь коло, що росте.
-  // Справжня секція заходить під кінець hero і з'являється, щойно коло покрило весь екран.
-  let aboutForced = false;
-  if (!reduce) {
-    document.documentElement.classList.add('has-portal');
-    const clone = about.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.classList.add('about--clone');
-    $$('[id]', clone).forEach(e => e.removeAttribute('id'));
-    $$('.split, .reveal', clone).forEach(e => e.classList.add('in'));
-    heroPortal.appendChild(clone);
-    // клавіатура зайшла в «Про нас» до кінця порталу — доводимо скрол до справжньої секції
-    about.addEventListener('focusin', () => { if (heroHp < 1) scrollTo({ top: scrollY + about.getBoundingClientRect().top }); });
-  }
-  const support = $('.support');
-  const supportBg = $('.support__bg');
-  const supportRing = $('.support__ring');
-  // кільце з форм напрямків: око / квітка / серце
-  const RING_N = 42;
-  const ringEls = Array.from({ length: RING_N }, (_, i) => {
-    const f = FORMS[i % 3];
-    return supportRing.appendChild(shapeEl(f.name, '', f.c));
+  // «Про нас» заходить на другий екран hero і заїжджає поверх закріпленого hero знизу
+  if (!reduce) document.documentElement.classList.add('has-stack');
+  // той самий жест для «Про нас пишуть»: новини стоять, коли дійшли низом до краю екрана, лайм наїжджає поверх.
+  // CSS бере висоту новин (--wh, на скільки підняти sticky) і медіа (--mh, наїзд — не більше екрана)
+  const newsSec = $('#news'), newsWrap = $('.wrap', newsSec), mediaSec = $('#media');
+  const stackRO = new ResizeObserver(() => {
+    newsSec.style.setProperty('--wh', `${newsWrap.offsetHeight}px`);
+    newsSec.parentElement.style.setProperty('--mh', `${mediaSec.offsetHeight}px`);
   });
+  [newsWrap, mediaSec].forEach(el => stackRO.observe(el));
+  // фокус з клавіатури в новинах, які вже під лаймом, — відкочуємо до моменту перед наїздом
+  newsSec.addEventListener('focusin', e => {
+    const m = mediaSec.getBoundingClientRect().top;
+    if (!reduce && m < innerHeight && e.target.getBoundingClientRect().bottom > m && e.target.matches(':focus-visible'))
+      scrollTo({ top: scrollY - (innerHeight - m) });
+  });
+  const support = $('.support');
+  const supportInner = $('.support__inner');
+  const supportBg = $('.support__bg');
   let lastSp = -1, supportIn = false, supportTop = Infinity;   // supportTop — верх синього кола у вʼюпорті
 
-  // Синє коло розкривається з патерну; кільце форм іде по краю на R + 28px, під синім
+  function supportShow(instant) {
+    supportIn = true;
+    support.classList.add('is-in');
+    supportInner.classList.add('in');
+    if (instant) supportInner.classList.add('is-instant');
+  }
+  // фокус з клавіатури всередині — текст і кнопки мають бути видно одразу
+  supportInner.addEventListener('focusin', () => { if (!supportIn) supportShow(true); });
+
+  // Синє коло розкривається чистим, без форм по краю
   function renderSupport(sp, sr, vw, vh) {
-    // текст не скрабимо: один тригер — заголовок, потім грід (CSS)
-    if (sp > .7 && !supportIn) { supportIn = true; support.classList.add('is-in'); }
+    // текст не скрабимо: один тригер — рядки заголовка й ліду, потім реквізити (CSS); прийшли якорем — одразу на місці
+    if (sp > .7 && !supportIn) supportShow('instant' in supportInner.dataset);
     if (sp === lastSp) return;
     lastSp = sp;
     const k = range(sp, 0, .7);   // до тригера тексту синє вже повне — білий текст не ляже на папір
@@ -477,18 +524,9 @@
     const R = sR * Math.pow(k, 1.8);
     // шари заходять вище секції (--up), тож центр кола рахуємо від їхнього верху
     const up = -supportBg.offsetTop;
-    const cx = sr.width / 2, cy = up + sr.height * .35, rr = R + 28;
+    const cy = up + sr.height * .35;
     supportTop = k > 0 ? sr.top + sr.height * .35 - R : Infinity;
     supportBg.style.clipPath = k >= 1 && !up ? 'none' : `circle(${R}px at 50% ${cy}px)`;
-    const fade = 1 - range(k, .85, 1);
-    supportRing.style.opacity = k > 0 ? fade : 0;
-    if (!(k > 0) || !fade) return;
-    // поки коло мале, форми менші — щоб не налазили одна на одну
-    const size = Math.min(1, (2 * Math.PI * rr / RING_N) * .6 / 24);
-    ringEls.forEach((el, i) => {
-      const a = i / RING_N * Math.PI * 2 + k * .6;
-      el.style.transform = `translate3d(${cx + Math.cos(a) * rr}px,${cy + Math.sin(a) * rr}px,0) rotate(${a + Math.PI / 2}rad) scale(${size})`;
-    });
   }
   const hdr = $('.hdr');
   const ftr = $('.ftr');
@@ -502,77 +540,15 @@
 
   function frame() {
     const vw = innerWidth, vh = innerHeight;
-    const diag = Math.hypot(vw, vh) / 2 * 1.04;
 
-    // HERO, фаза 1 (hp 0–.5): пауза → синій стискається в коло, прихована наука стягується в центр → коло з оком
+    // HERO: «Про нас» заїжджає поверх знизу (hp 0 → 1 — рівно один екран), hero стоїть на місці
     const hp = reduce ? 0 : progress(hero);
     heroHp = hp;
     heroLensScroll(hp);
-    const q = range(hp, 0, .5);
-    const rMin = Math.min(vw, vh) * .09;
-    // фаза 2: око кліпає → з лінії повіки розкривається зелене коло → заливає екран → біле око росте, крізь зіницю відкривається «Про нас»
-    const by = blinkY(hp);
-    const bx = lerp(1, 1.04, clamp((1.05 - by) / .99));
-    const cu = ease(range(hp, .565, .64));                      // зелена шторка від лінії повіки
-    const fl = ease(range(hp, .63, .74));                       // зелене заливає
-    const rb = heroRb(q, diag, rMin);                           // синє коло фази 1
-    const rg = lerp(rMin, diag, fl);                            // зелене
-    const clip = `circle(${rb}px at 50% 50%)`;
-    heroBlue.style.clipPath = clip;
-    heroHidden.style.clipPath = clip;
-    heroGreen.style.visibility = cu > 0 ? 'visible' : 'hidden';
-    heroGreen.style.clipPath = `ellipse(${rg}px ${rg * cu}px at 50% 50%)`;
-    heroHidden.style.opacity = 1 - range(q, .3, .75);
-    // поле модулів стягується в центр разом із колом
-    const hs = ease(range(q, .12, .72));
-    heroField.style.transform = `scale(${heroFs(q)}) rotate(${hs * -24}deg)`;
-    const hc = range(q, .12, 1);
-    heroContent.style.opacity = 1 - range(q, .12, .42);
-    heroContent.style.transform = `translateY(${-hc * 80}px) scale(${1 - hc * .05})`;
-    const dp = range(q, .55, .85);
-    // око лишається білим: кліпає, чекає в центрі, поки зелене заливає екран, і пірнає
-    const t = reduce ? 0 : range(hp, .70, 1);
-    heroDot.style.opacity = t > 0 ? 0 : dp;
-    heroDot.style.setProperty('--hole', cu > 0 ? `color-mix(in srgb, var(--blue), var(--green) ${(cu * 100).toFixed(1)}%)` : '');
-    const ds = lerp(.4, 1, easeOutBack(dp));
-    heroDot.style.transform = `scale(${(ds * bx).toFixed(4)}, ${(ds * by).toFixed(4)}) rotate(${(1 - dp) * -90}deg)`;
-    let ri = 0, lensCover = false, lf = 0;
-    if (!reduce) {
-      // занурення: розмір росте експоненційно (рівномірний дайв), зіниця розширюється; зіниця — вікно в «Про нас»
-      const k0 = .52 * .18 * Math.min(vw, vh) / EYE_W;
-      const PF = 2.2;   // наприкінці зіниця майже на всю висоту ока — біла склера лишається тонким обідком і пролітає швидко
-      const pf = lerp(1, PF, ease(range(hp, .72, .96)));
-      const k = k0 * Math.pow(diag / (EYE_PUPIL * PF * k0), Math.pow(t, 1.5));
-      ri = EYE_PUPIL * pf * k;
-      // проходячи крізь око, склера розчиняється в полі «Про нас»: білий не заповнює екран
-      lf = range(hp, .86, .97);
-      heroEye.style.fill = lf > 0 ? `color-mix(in srgb, #fff, var(--green) ${(lf * 100).toFixed(1)}%)` : '';
-      heroEye.style.visibility = t > 0 ? 'visible' : 'hidden';
-      if (t > 0) {
-        eyePath.setAttribute('d', EYE_LENS + pupilD(EYE_PUPIL * pf));
-        eyePath.setAttribute('transform', `translate(${vw / 2} ${vh / 2}) scale(${k}) translate(${-EYE_CX} ${-EYE_CY})`);
-        // біле око накрило верхні кути екрана — під шапкою суцільний папір
-        lensCover = [[0, 0], [vw, 0]].every(([x, y]) =>
-          eyePath.isPointInFill(new DOMPoint((x - vw / 2) / k + EYE_CX, (y - vh / 2) / k + EYE_CY)));
-      }
-      heroPortal.style.visibility = t > 0 ? 'visible' : 'hidden';
-      heroPortal.style.opacity = range(t, 0, .06);
-      heroPortal.style.clipPath = `circle(${ri + 1}px at 50% 50%)`;
-      // справжня секція — лише коли портал повністю відкритий (кадри ідентичні, тож стик невидимий)
-      const open = hp >= .999;
-      about.style.opacity = open ? '' : '0';
-      about.style.pointerEvents = open ? '' : 'none';
-      if (hp > .5 && !aboutForced) {
-        aboutForced = true;
-        $$('.split, .reveal', about).forEach(el => { el.classList.add('in'); io.unobserve(el); });
-      }
-    }
 
     // ПРОЄКТИ: колода
     if (deckOn) renderDeck();
 
-    // ПРО НАС → НАПРЯМКИ: форми летять у диски
-    renderAboutFlight();
 
     // ПІДТРИМКА
     const sr = support.getBoundingClientRect();
@@ -585,24 +561,18 @@
     for (const s of sections) {
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
+        if (s === newsSec && !mediaSec.hidden && mediaSec.getBoundingClientRect().top <= y) continue;   // лайм уже наїхав під шапку
         if (s === hero) {
-          if (hp >= .999) continue;   // портал відкрито — під хедером уже «Про нас»
+          if (about.getBoundingClientRect().top <= y) continue;   // «Про нас» уже наїхала під шапку
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
-          theme = rb >= Math.hypot(vw / 2 - 40, vh / 2 - y) ? 'blue' : 'light';   // прозора шапка: білий текст, поки синє коло ще під лого/навігацією
-          const field = () => {
-            theme = 'field';
-            hdr.style.setProperty('--field', about.style.getPropertyValue('--field'));
-            hdr.style.setProperty('--on', about.style.getPropertyValue('--on'));
-          };
-          if (ri >= Math.hypot(vw / 2, vh / 2)) field();                          // зіниця накрила шапку: зелене поле, як у «Про нас»
-          else if (lensCover && lf < .5) theme = 'light';                         // під шапкою біле око
-          else if (fl > 0 && rg >= Math.hypot(vw / 2, vh / 2 - 40)) field();      // зелене заливає шапку
+          theme = 'blue';
         }
         else if (s === support) theme = sp >= .7 ? 'solid-blue' : 'light';
         else if (s.dataset.theme === 'field') {
           theme = 'field';
           hdr.style.setProperty('--field', s.style.getPropertyValue('--field'));
           hdr.style.setProperty('--on', s.style.getPropertyValue('--on'));
+          hdr.style.setProperty('--off', s.style.getPropertyValue('--off') || 'var(--ink)');   // текст CTA на тлі --on
         }
         else theme = s.dataset.theme === 'blue' ? 'solid-blue' : 'light';
         break;
@@ -622,7 +592,7 @@
   const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { frame(); ticking = false; }); } };
   addEventListener('scroll', onScroll, { passive: true });
   let rz;
-  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { lastSp = -1; flightT = -1; sizeField(); frame(); }, 120); });
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { lastSp = -1; sizeField(); frame(); }, 120); });
   frame();
 
   // Фокус у hero, коли сцену вже прокручено, — повертаємо її на початок: білий текст має лежати на синьому
@@ -630,95 +600,47 @@
     if (heroHp > .05) scrollTo({ top: scrollY + hero.getBoundingClientRect().top });
   });
 
-  // Перехід крізь око — за один скрол-рух: жест у hero сам доводить сцену до кінця (або назад на початок)
-  if (!reduce) {
-    const ends = () => { const y0 = hero.offsetTop; return [y0, y0 + hero.offsetHeight - innerHeight]; };
-    const DUR = 1800;
-    const easeIO = t => -(Math.cos(Math.PI * t) - 1) / 2;
-    let tween = 0, lastSet = 0, lastWheel = 0, lockUntil = 0;
-    const glide = to => {
-      if (tween) return;
-      const from = scrollY, t0 = performance.now();
-      lastSet = from;
-      const step = now => {
-        // користувач тягне скролбар — віддаємо йому керування
-        if (Math.abs(scrollY - lastSet) > 2) { tween = 0; return; }
-        const p = Math.min(1, (now - t0) / DUR);
-        lastSet = Math.round(lerp(from, to, easeIO(p)));
-        scrollTo({ top: lastSet, behavior: 'instant' });
-        if (p < 1) tween = requestAnimationFrame(step);
-        else { tween = 0; lockUntil = now + 400; }
-      };
-      tween = requestAnimationFrame(step);
-    };
-    // куди веде жест: 1 — крізь око вниз, -1 — назад на початок, 0 — звичайний скрол
-    const target = dir => {
-      const [y0, y1] = ends(), y = scrollY;
-      if (dir > 0 && y >= y0 - 1 && y < y1 - 1) return y1;
-      if (dir < 0 && y > y0 + 1 && y <= y1 + 1) return y0;
-      return null;
-    };
-    // інерція трекпада після переходу не повинна прокручувати далі
-    const swallowing = now => tween || now < lockUntil || (now - lastWheel < 120 && now - lockUntil < 1200);
-    addEventListener('wheel', e => {
-      if (e.ctrlKey || !e.deltaY) return;
-      const now = performance.now(), busy = swallowing(now);
-      lastWheel = now;
-      if (busy) { e.preventDefault(); return; }
-      const to = target(Math.sign(e.deltaY));
-      if (to !== null) { e.preventDefault(); glide(to); }
-    }, { passive: false });
-
-    let touchY = null;
-    addEventListener('touchstart', e => { touchY = e.touches[0].clientY; }, { passive: true });
-    addEventListener('touchmove', e => {
-      if (touchY === null) return;
-      if (tween) { e.preventDefault(); return; }
-      const dy = touchY - e.touches[0].clientY;
-      const to = target(Math.sign(dy));
-      if (to === null) return;
-      e.preventDefault();
-      if (Math.abs(dy) > 8) { touchY = null; glide(to); }
-    }, { passive: false });
-
-    addEventListener('keydown', e => {
-      if (e.altKey || e.ctrlKey || e.metaKey || e.target.closest('input, textarea, select, button, [contenteditable]')) return;
-      const dir = { ArrowDown: 1, PageDown: 1, ' ': e.shiftKey ? -1 : 1, ArrowUp: -1, PageUp: -1 }[e.key];
-      if (!dir) return;
-      if (tween) { e.preventDefault(); return; }
-      const to = target(dir);
-      if (to !== null) { e.preventDefault(); glide(to); }
-    });
-
-    // скролбар, інерція тачу з «Про нас» тощо зупинили сцену посередині — доводимо в бік руху
-    let idle, prevY = scrollY, lastDir = 1;
-    addEventListener('scroll', () => {
-      if (scrollY !== prevY) lastDir = Math.sign(scrollY - prevY);
-      prevY = scrollY;
-      clearTimeout(idle);
-      if (tween) return;
-      idle = setTimeout(() => {
-        const [y0, y1] = ends();
-        if (!tween && scrollY > y0 + 1 && scrollY < y1 - 1) glide(lastDir > 0 ? y1 : y0);
-      }, 160);
-    }, { passive: true });
-  }
-
   /* ---------- 8. Медіа: ховаємо секцію, якщо матеріалів < 3 ---------- */
   if ($$('#media .mcard').length < 3) $('#media').hidden = true;
 
-  /* ---------- 9. Копіювання реквізитів ---------- */
+  /* ---------- 9. Копіювання реквізитів: чесні стани — успіх (тост) або помилка (значення виділено вручну) ---------- */
   const toast = $('.toast');
+  const reqStatus = $('.req__status');
   let tt;
+  // видимий текст кнопки — частина її доступного імені («Скопіювати IBAN»); «fail» — UI-мікрокопі, потрібне погодження
+  const COPY = { idle: 'Скопіювати', done: 'Скопійовано<span aria-hidden="true"> ✓</span>', fail: 'Скопіюйте вручну' };
+  const copyText = async (text, node) => {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+    // запасний шлях: виділяємо значення й пробуємо execCommand — відповідь дає саме його результат
+    const sel = getSelection(), r = document.createRange();
+    r.selectNodeContents(node); sel.removeAllRanges(); sel.addRange(r);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch {}
+    if (ok) sel.removeAllRanges();
+    return ok;
+  };
   $$('.req__row').forEach(row => {
-    const btn = $('.req__btn', row), val = $('[data-copy]', row), label = $('dt', row).textContent;
+    const btn = $('.req__btn', row), txt = $('.req__btn-t', btn), val = $('[data-copy]', row), label = $('dt', row).textContent;
+    let rt;
+    const setState = st => {
+      btn.classList.toggle('is-done', st === 'done');
+      btn.classList.toggle('is-error', st === 'fail');
+      row.classList.toggle('is-error', st === 'fail');
+      txt.innerHTML = COPY[st];
+    };
     btn.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(val.textContent.trim()); }
-      catch { const r = document.createRange(); r.selectNodeContents(val); getSelection().removeAllRanges(); getSelection().addRange(r); document.execCommand('copy'); }
-      btn.textContent = 'Скопійовано ✓'; btn.classList.add('is-done');
-      setTimeout(() => { btn.textContent = 'Скопіювати'; btn.classList.remove('is-done'); }, 1800);
-      toast.textContent = `${label} скопійовано`;
-      toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 1800);
+      clearTimeout(rt);
+      const ok = await copyText(val.textContent.trim(), val);
+      setState(ok ? 'done' : 'fail');
+      if (ok) {
+        toast.textContent = `${label} скопійовано`;
+        toast.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => toast.classList.remove('show'), 1800);
+        rt = setTimeout(() => setState('idle'), 1800);
+      } else {
+        // тосту немає; значення лишається виділеним — людина копіює сама. Текст — потрібне погодження
+        reqStatus.textContent = `${label}: не вдалося скопіювати. Значення виділено — скопіюйте вручну.`;
+        rt = setTimeout(() => { setState('idle'); reqStatus.textContent = ''; }, 6000);
+      }
     });
   });
 
@@ -731,40 +653,8 @@
     const DIRS = [['eye', 'paper'], ['flower', 'lime'], ['arrows', 'pink'], ['heart', 'purple']];
     const MAX_SHAPES = 20;
     const canDrag = matchMedia('(hover: hover) and (pointer: fine)').matches;
-    const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
-    // Силует кожної форми: точки контуру → опукла оболонка (в одиницях viewBox)
     let outlines = null;
-    const buildOutlines = () => {
-      const probe = document.createElementNS(NS, 'svg');
-      probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden';
-      document.body.appendChild(probe);
-      outlines = {};
-      ICONS.forEach(name => {
-        const sym = document.getElementById(`i-${name}`);
-        if (!sym) return;
-        const [vx, vy, vw, vh] = sym.getAttribute('viewBox').split(/[\s,]+/).map(Number);
-        probe.setAttribute('width', vw); probe.setAttribute('height', vh);
-        const g = document.createElementNS(NS, 'g');
-        g.innerHTML = sym.innerHTML;
-        probe.appendChild(g);
-        const els = $$('path, circle, ellipse, rect, polygon', g).filter(el =>
-          !el.closest('clipPath, defs, mask') && el.getAttribute('fill') !== 'none' && !el.hasAttribute('style'));
-        const lens = els.map(el => el.getTotalLength());
-        const total = lens.reduce((a, b) => a + b, 0) || 1;
-        const pts = [];
-        els.forEach((el, k) => {
-          const m = el.getCTM(), n = Math.max(12, Math.round(lens[k] / total * 120));
-          for (let i = 0; i < n; i++) {
-            const p = el.getPointAtLength(lens[k] * i / n).matrixTransform(m);
-            pts.push({ x: p.x - vx, y: p.y - vy });
-          }
-        });
-        g.remove();
-        if (pts.length >= 3) outlines[name] = { w: vw, h: vh, hull: Vertices.hull(pts) };
-      });
-      probe.remove();
-    };
 
     let engine, runner, shapes = [], timers = [], W = 0, H = 0, started = false, visible = false, lastVW = innerWidth;
     let mouse = null, mc = null, base = 60, nextColor = () => 'lime';
@@ -923,7 +813,7 @@
       visible = e.isIntersecting;
       if (visible && !started) {
         started = true;
-        spriteReady.then(() => { if (!outlines) buildOutlines(); init(); });
+        spriteReady.then(() => { outlines = getOutlines(); init(); });
       } else if (runner) {
         visible ? Runner.run(runner, engine) : Runner.stop(runner);
       }
@@ -937,91 +827,183 @@
     });
   }
 
+  /* ---------- 10а. «Про нас»: форми засипаються з боків і лягають рамкою під текстом (Matter.js, як у футері) ---------- */
+  // Рамка, а не вистава: спершу з'являється текст, слідом — один раз — форми розміру футера влітають з-за лівого
+  // й правого краю і лягають двома низькими купами в нижніх кутах (трохи «втоплені» за край секції). Над ними —
+  // невидима стеля на рівні низу тексту: у текст форми не залітають, центр під ним лишається вільним. Лайму немає —
+  // він лишається акцентом «людям». Відлежались — фізика зупиняється; без руху купа одразу лежить
+  const pourZone = $('.about__stage');
+  if (pourZone && window.Matter) {
+    const { Engine, Runner, Bodies, Body, Composite, Events, Vertices } = Matter;
+    const POUR_COLORS = ['pink', 'paper', 'purple', 'blue', 'coral', 'maroon', 'brown'];
+    const aboutBody = $('.about__body');
+    const aboutText = [$('.about__title'), ...aboutBody.children];   // сам лід — без нижнього відступу (мобільний)
+    let pe = null, pr = null, pShapes = [], pTimers = [], pSize = '';
+
+    const pRender = () => pShapes.forEach(s => {
+      const { x, y } = s.body.position;
+      s.el.style.transform = `translate(${x}px,${y}px) rotate(${s.body.angle}rad) translate(${-s.cx}px,${-s.cy}px)`;
+    });
+    const pTeardown = () => {
+      pTimers.forEach(clearTimeout); pTimers = [];
+      if (pr) Runner.stop(pr);
+      if (pe) { Events.off(pe); Composite.clear(pe.world, false); Engine.clear(pe); }
+      pShapes.forEach(s => s.el.remove()); pShapes = [];
+      pe = pr = null;
+    };
+    // still — без анімації: прораховуємо падіння наперед і малюємо, як форми лягли
+    const pour = still => {
+      const outlines = getOutlines();
+      const W = pourZone.clientWidth, H = pourZone.clientHeight;
+      pSize = `${W}x${H}`;
+      const ceil = Math.max(...aboutText.map(el => el.getBoundingClientRect().bottom)) - pourZone.getBoundingClientRect().top + 24;
+      const base = Math.min(W >= 1100 ? W / 6 : W >= 600 ? W / 4.2 : W / 3.6, (H - ceil) * .55);
+      // підлога — пологий «пагорб»: від центру спадає до країв, тож форми скочуються в кути й центр лишається вільним.
+      // Крайні стіни трохи за краєм екрана; форма, що влітає з-за краю, «бачить» їх лише коли вже вся всередині
+      const sink = base * .12, rise = base * .4, edge = base * .1, T = 400, WALL = 2;
+      const solid = { isStatic: true, friction: .6 };
+      // схил: верх лежить на відрізку від (−edge, H + sink) біля краю до (W/2, H − rise) у центрі
+      const slope = Math.atan2(rise + sink, W / 2 + edge), len = Math.hypot(W / 2 + edge, rise + sink);
+      const plane = side => Bodies.rectangle(
+        W / 2 + side * (W / 4 + edge / 2) - side * Math.sin(slope) * T / 2, H + (sink - rise) / 2 + Math.cos(slope) * T / 2,
+        len, T, { ...solid, angle: side * slope });
+      pe = Engine.create({ positionIterations: 8, velocityIterations: 6 });
+      Composite.add(pe.world, [
+        plane(-1), plane(1),
+        Bodies.rectangle(W / 2, ceil - T / 2, W + 4 * (base + T), T, solid),                         // стеля — низ тексту
+        Bodies.rectangle(-edge - T / 2, H / 2, T, H * 4, { ...solid, collisionFilter: { category: WALL } }),
+        Bodies.rectangle(W + edge + T / 2, H / 2, T, H * 4, { ...solid, collisionFilter: { category: WALL } }),
+      ]);
+      const names = shuffle(ICONS.filter(n => outlines[n])).slice(0, (W >= 600 ? 3 : 2) * 2);
+      const colors = shuffle(POUR_COLORS.slice());
+      // по черзі зліва і справа: перша з кожного боку лягає в кут, друга — поруч, третя — зверху між ними
+      const LAND = [.04, .13, .08];
+      const add = i => {
+        const o = outlines[names[i]], left = i % 2 === 0, row = i >> 1, dir = left ? 1 : -1;
+        const size = base * (.85 + Math.random() * .3), k = size / Math.max(o.w, o.h);
+        const hull = o.hull.map(p => ({ x: p.x * k, y: p.y * k }));
+        const c = Vertices.centre(hull);
+        const x = left ? -size * .6 : W + size * .6, y = ceil + size * .72;
+        const body = Bodies.fromVertices(x, y, [hull], {
+          restitution: .1, friction: .8, frictionAir: .012, density: .002, angle: Math.random() * Math.PI * 2,
+          collisionFilter: { mask: ~WALL },
+        });
+        const tx = W * LAND[row % LAND.length] + size * .6;                     // скільки пролетіти всередину
+        const steps = Math.sqrt(2 * Math.max(60, H - size / 2 - y) / .278);   // кроків до підлоги (g ≈ .278 px/крок²)
+        Body.setVelocity(body, { x: dir * tx / (steps * .9), y: 0 });
+        Body.setAngularVelocity(body, dir * (.02 + Math.random() * .03));
+        const el = document.createElement('div');
+        el.className = 'about__shape';
+        el.style.cssText = `width:${o.w * k}px;height:${o.h * k}px;color:var(--${colors[i % colors.length]})`;
+        el.innerHTML = `<svg viewBox="0 0 ${o.w} ${o.h}"><use href="#i-${names[i]}"/></svg>`;
+        pourZone.appendChild(el);
+        Composite.add(pe.world, body);
+        pShapes.push({ body, el, cx: c.x, cy: c.y, left, armed: false });
+      };
+      // центр перетнув край екрана — тепер крайня стіна її тримає
+      const arm = () => pShapes.forEach(s => {
+        const { x } = s.body.position;
+        if (!s.armed && (s.left ? x > 0 : x < W)) { s.armed = true; s.body.collisionFilter.mask = -1; }
+      });
+      if (still) {
+        const step = n => { for (let t = 0; t < n; t++) { Engine.update(pe, 1000 / 60); arm(); } };
+        names.forEach((_, i) => { add(i); step(12); });
+        step(600);
+        pRender();
+        return;
+      }
+      let calm = 0;
+      Events.on(pe, 'afterUpdate', () => {
+        arm();
+        pRender();
+        if (pShapes.length < names.length) return;
+        calm = pShapes.every(s => s.body.speed < .15 && s.body.angularSpeed < .01) ? calm + 1 : 0;
+        if (calm > 30) Runner.stop(pr);
+      });
+      pr = Runner.create();
+      Runner.run(pr, pe);
+      names.forEach((_, i) => pTimers.push(setTimeout(() => add(i), i * 180)));
+      pTimers.push(setTimeout(() => Runner.stop(pr), 6000));
+    };
+
+    // Тригер: лід «Про нас» уже з'являється і низ секції (куди лягають форми) в кадрі — на десктопі це мить, коли
+    // секція доїхала; на мобільному — коли дочитали до низу. Прийшли якорем — без затримки
+    const floor = pourZone.appendChild(Object.assign(document.createElement('div'), { style: 'position:absolute;left:0;bottom:0;width:1px;height:1px' }));
+    let poured = false, floorIn = false;
+    const check = () => {
+      if (poured || !floorIn || !aboutBody.classList.contains('in')) return;
+      poured = true;
+      const delay = reduce || aboutBody.classList.contains('is-instant') ? 0 : 300;
+      Promise.all([spriteReady, document.fonts.ready]).then(() => setTimeout(() => pour(reduce), delay));
+    };
+    const mo = new MutationObserver(check);
+    mo.observe(aboutBody, { attributes: true, attributeFilter: ['class'] });
+    const fio = new IntersectionObserver(([e]) => {
+      floorIn = e.isIntersecting;
+      check();
+      if (poured) { fio.disconnect(); mo.disconnect(); }
+    });
+    fio.observe(floor);
+    // змінився розмір — купу перераховуємо одразу лежачою, без повторного засипання
+    let rzP;
+    new ResizeObserver(() => {
+      clearTimeout(rzP);
+      rzP = setTimeout(() => {
+        if (!pe || `${pourZone.clientWidth}x${pourZone.clientHeight}` === pSize) return;
+        pTeardown();
+        pour(true);
+      }, 200);
+    }).observe(pourZone);
+  }
+
   /* ---------- 11. Hero: «Великі світи» і лупа «Фокус» ---------- */
-  // Ззовні — прості форми: силуети ілюстрацій брендбуку тон-в-тон (--blue-deep, у кожної своя прозорість) — чотири
-  // великі й кілька малих, окремих елементів тих самих ілюстрацій. Під лупою ×2 — «складний світ»: внутрішні шари
-  // ілюстрації в масштабі самої форми. Порожній синій між формами під лупою — просто синій.
-  // Шари за глибиною: [0] силуети суцільним --blue-deep, [1] основи в кольорі й малі елементи, [2…4] внутрішні шари
-  const ART = {
-    combine: [[], ['Group'], ['Vector_3'], ['Vector_4']],   // основа в оригіналі червона — лишається глибоким синім
-    icon: [['Group'], ['Layer_1', 'Layer_1_2'], ['Group_2'], ['Vector_7']],
-    flower: [['Outer petals'], ['Vector_3'], ['Vector_4'], ['Vector_5']],
-    lungs: [['Vector'], ['Vector_2'], ['Vector_3'], ['Vector_4']],
-  };
-  const SIL = { combine: 'Ellipse 15', icon: 'Group', flower: 'Outer petals', lungs: 'Vector' };   // силует — нижній шар
-  const HOLE = { 'icon/Group': true };   // м'який квадрат з отвором: контури одним шляхом evenodd
-  const DEPTH = 5;
-  // Композиція (еталони 1440×900 і 390×844), знизу вгору: x, y — центр у % hero; s — розмір у vmin (портрет — у vw
-  // телефона-еталона) по стороні by (за замовчуванням — більшій); a — поворот; o — прозорість ззовні; id — малий елемент
-  // ілюстрації f; over — лежить над великою формою (під лупою перекриває і її внутрішні шари); k — ім'я опори для інших.
-  // На 16:9 і ширше x прив'язано до опор (ax): між 16:10 і 16:9 — плавний перехід від % до опор; вужче за 16:10 —
-  // % від кадру 16:10 по центру. Верхній ряд малих форм іде від ока: галявина ≥ 15vmin, проміжки між формами ≥ 10vmin
+  // Ззовні — кілька великих форм спрайта тон-в-тон: суцільний синій, трохи глибший за поле (мікс --blue і --blue-deep,
+  // без прозорості й світлих тинтів), частина за краєм екрана. Під лупою ті самі форми проявляються у своєму кольорі,
+  // як у футері: форми напрямків — кодовий колір, решта — палітра (червоний — лише декоративна форма).
+  // Між формами під лупою — просто синій. Шари за глибиною: [0] тон, [1] колір
+  const DEPTH = 2;
+  // Композиція (еталони 1440×900 і 390×844), знизу вгору: n — форма спрайта; c — колір під лупою; x, y — центр у % hero;
+  // s — розмір у vmin (портрет — у vw телефона-еталона) по більшій стороні; a — поворот; t — глибина тону (частка
+  // --blue-deep). На 16:9 і ширше x прив'язано до опор (ax): між 16:10 і 16:9 — плавний перехід від % до опор; вужче
+  // за 16:10 — % від кадру 16:10 по центру. Мало форм, великі й спокійні; довкола ока в «C» — галявина ≥ 15vmin,
+  // між формами ≥ 10vmin
   const DESK = [
-    { f: 'combine', x: 89, y: 16, s: 66, a: 14, o: .17, ax: m => m.W - 17.6 * m.u },                          // A
-    { f: 'icon', x: 3, y: 58, s: 52, a: -12, o: .17, ax: m => 4.8 * m.u },                                    // B
-    { f: 'flower', x: 61, y: 64, s: 38, by: 'h', a: 20, o: .2, ax: m => m.intro + 12 * m.u, k: 'C' },         // C
-    { f: 'lungs', x: 39, y: 99, s: 30, a: -8, o: .2, ax: m => (m.claim + m.intro) / 2 - 4 * m.u },            // D
-    { f: 'lungs', id: 'Vector_2', x: 50, y: 67, s: 16, a: 18, o: .26, ax: m => m.C - 18 * m.u, over: true },  // e1
-    { f: 'combine', id: 'Vector_4', x: 33, y: 60, s: 12, by: 'h', a: 24, o: .26, ax: m => m.C - 45 * m.u },   // e2
-    // e3: від лого, але центр не ближче 23vmin до ока; e4 і e6 — ланцюжком від e3
-    { f: 'icon', id: 'Layer_1', x: 26, y: 12, s: 22, by: 'w', a: -16, o: .26, k: 'e3',
-      ax: m => Math.min(m.wm + 27 * m.u, m.eye - Math.sqrt(Math.max(0, (23 * m.u) ** 2 - (m.eyeY - .12 * m.H) ** 2))) },
-    { f: 'icon', id: 'Layer_1_2', x: 10.5, y: 16, s: 10, by: 'w', a: 24, o: .26, ax: m => m.e3 - 25.5 * m.u, k: 'e4' },
-    { f: 'combine', id: 'Vector', x: 97, y: 65, s: 12, a: 28, o: .26, ax: m => m.W - 4.8 * m.u },             // e5
-    // e6: від 2:1, якщо між B і e4 є місце
-    { f: 'combine', id: 'Vector', y: 20, s: 18, a: -10, o: .26, ax: m => m.e4 - 23 * m.u, wide: (x, m) => x >= 38 * m.u },
+    { n: 'flower', c: 'lime', x: 91, y: 13, s: 64, a: 14, t: .2, ax: m => m.W - 13 * m.u },
+    { n: 'clover', c: 'hotpink', x: 2, y: 62, s: 52, a: -12, t: .2, ax: m => 3.2 * m.u },
+    // від лого, але не ближче 30vmin до ока
+    { n: 'drop', c: 'coral', x: 22, y: 14, s: 30, a: 20, t: .26, ax: m => Math.min(m.wm + 22 * m.u, m.eye - 30 * m.u) },
+    { n: 'burst', c: 'red', x: 64.5, y: 67, s: 34, a: 10, t: .26, ax: m => m.intro + 20 * m.u },
+    { n: 'star', c: 'paper', x: 39, y: 94, s: 30, a: 8, t: .26, ax: m => (m.claim + m.intro) / 2 - 6.4 * m.u },
+    { n: 'heart', c: 'purple', x: 95, y: 93, s: 40, a: -16, t: .2, ax: m => m.W - 8 * m.u },
   ];
   const MOB = [
-    { f: 'combine', x: 92, y: 9, s: 76, a: 14, o: .17 },
-    { f: 'icon', id: 'Layer_1', x: 26, y: 10, s: 28, by: 'w', a: -16, o: .26 },
-    { f: 'icon', x: 0, y: 44, s: 62, a: -12, o: .17 },
-    { f: 'flower', x: 84, y: 43, s: 50, by: 'h', a: 20, o: .2, k: 'C' },
-    // над C — зсув від C у тих самих одиницях, що й розмір (на 390×844 — рівно 62% / 36%)
-    { f: 'lungs', id: 'Vector_2', x: 62, y: 36, s: 18, a: 18, o: .26, over: true, at: m => [m.C - 22 * m.k, m.Cy - 7 * 8.44 / 3.9 * m.k] },
-    { f: 'lungs', x: 93, y: 99, s: 44, a: -8, o: .2 },
+    { n: 'flower', c: 'lime', x: 95, y: 14, s: 72, a: 14, t: .2 },
+    { n: 'drop', c: 'coral', x: 18, y: 16, s: 30, a: 28, t: .26 },
+    { n: 'clover', c: 'hotpink', x: 2.5, y: 56, s: 60, a: -12, t: .2 },
+    { n: 'burst', c: 'red', x: 87, y: 71, s: 40, a: 10, t: .26 },
+    { n: 'heart', c: 'purple', x: 33, y: 100, s: 56, a: -16, t: .2 },
   ];
-  // колір із файлу → брендовий токен styles.css (усі кольори ілюстрацій збігаються з токенами; червоний — декор)
-  const FILE_TOKEN = { '#054FF0': 'blue', '#BDC71E': 'lime', '#FC80ED': 'pink', '#FD1C00': 'red', '#8303DC': 'purple',
-    '#0D6F3F': 'green', '#4B0F1E': 'maroon', '#FF3666': 'hotpink' };
   const rootCS = getComputedStyle(document.documentElement);
   const token = (name, fb) => rootCS.getPropertyValue(`--${name}`).trim() || fb;
-  const paint = fill => FILE_TOKEN[fill.toUpperCase()] ? token(FILE_TOKEN[fill.toUpperCase()], fill) : fill === 'white' ? '#fff' : fill;
-  const DEEP = token('blue-deep', '#0337A8');
-  const pieceId = (f, id) => `hw-${f}-${id.replace(/\W/g, '')}`;
-  // шматок ілюстрації — один шлях (контури групи разом: без швів антиаліасингу між сусідніми частинами)
-  const pathD = el => el.matches('circle')
-    ? (([cx, cy, r]) => `M${cx - r} ${cy}A${r} ${r} 0 1 0 ${cx + r} ${cy}A${r} ${r} 0 1 0 ${cx - r} ${cy}Z`)(['cx', 'cy', 'r'].map(a => +el.getAttribute(a)))
-    : el.matches('path') ? el.getAttribute('d') : $$('path, circle', el).map(pathD).join('');
-  const PIECES = {};   // `${f}/${id}` → { href, color, cx, cy, w, h } — центр і розміри bbox в одиницях файлу
-  const heroArt = !HERO_ART ? Promise.resolve(false) : Promise.all(Object.keys(ART).map(f => fetch(`assets/illustrations/${f}.svg`).then(r => r.text()).then(txt => {
-    const doc = new DOMParser().parseFromString(txt, 'image/svg+xml').documentElement;
-    const ids = new Set([SIL[f], ...ART[f].flat(), ...DESK.concat(MOB).filter(it => it.f === f && it.id).map(it => it.id)]);
-    return [...ids].map(id => {
-      const el = doc.querySelector(`[id="${id}"]`);
-      const fill = el.getAttribute('fill') || el.querySelector('[fill]').getAttribute('fill');
-      return { key: `${f}/${id}`, href: pieceId(f, id), color: paint(fill), d: pathD(el), hole: HOLE[`${f}/${id}`] };
+  // тон форми: суцільний мікс поля й --blue-deep (непрозорий — перекриття не темнішають)
+  const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  const BLUE = rgb(token('blue', '#054FF0')), DEEP = rgb(token('blue-deep', '#0337A8'));
+  const tone = t => `rgb(${BLUE.map((v, i) => Math.round(lerp(v, DEEP[i], t))).join(',')})`;
+  const BOX = {};   // форма спрайта → [ширина, висота] viewBox
+  const heroArt = !HERO_ART ? Promise.resolve(false) : spriteReady.then(() => {
+    new Set(DESK.concat(MOB).map(it => it.n)).forEach(n => {
+      const vb = document.getElementById(`i-${n}`)?.getAttribute('viewBox');
+      if (vb) BOX[n] = vb.split(/[\s,]+/).slice(2).map(Number);
     });
-  }))).then(lists => {
-    // спільні defs — у спрайті: на них посилаються і поле, і лупа; bbox міряємо на тимчасовому svg
-    const defs = sprite.appendChild(svgEl('defs'));
-    const probe = document.body.appendChild(svgEl('svg', { style: 'position:absolute;left:-9999px;top:0;visibility:hidden' }));
-    lists.flat().forEach(p => {
-      const attrs = { id: p.href, d: p.d };
-      if (p.hole) attrs['fill-rule'] = 'evenodd';
-      const b = probe.appendChild(svgEl('path', attrs)).getBBox();
-      defs.appendChild(svgEl('path', attrs));
-      PIECES[p.key] = { href: p.href, color: p.color, cx: b.x + b.width / 2, cy: b.y + b.height / 2, w: b.width, h: b.height };
-    });
-    probe.remove();
     return true;
-  }).catch(err => console.warn('hero art', err));
+  });
 
   // svg поля: координати hero, viewBox — коробка поля (більша за екран), тож форми, обрізані екраном, цілі
   const fieldArt = heroField.appendChild(svgEl('svg', { class: 'hero__art' }));
   let loupeDepth = null;   // шари лупи (<g> за глибиною) — створює блок лупи нижче
-  const use = (p, tf, fill, extra = '') => `<use href="#${p.href}" transform="${tf}" fill="${fill}"${extra}/>`;
+  const use = (n, tf, c) => `<use href="#i-${n}" width="${BOX[n][0]}" height="${BOX[n][1]}" transform="${tf}" color="${c}"/>`;
   function compose() {
-    if (!PIECES['combine/Ellipse 15']) return;
+    if (!BOX.flower) return;
     const hr = heroSticky.getBoundingClientRect(), W = hr.width, H = hr.height;
     const mob = H > W;   // портрет (мобільний і планшет) — своя композиція у vw
     // опори композиції — межі лого, тексту claim і ліду без скрол-трансформації контенту
@@ -1032,29 +1014,22 @@
     const m = { W, H, u: Math.min(W, H) / 100, wm: $('.hero__wm').getBoundingClientRect().left - hr.left,
       intro: $('.hero__intro').getBoundingClientRect().left - hr.left, claim: claim.getBoundingClientRect().right - hr.left };
     const eye = $('.hero__slot').getBoundingClientRect();
-    m.eye = eye.left + eye.width / 2 - hr.left; m.eyeY = eye.top + eye.height / 2 - hr.top;   // око в «C» — довкола нього галявина
+    m.eye = eye.left + eye.width / 2 - hr.left;   // око в «C» — довкола нього галявина
     heroContent.style.transform = keep;
     const ar = W / H, t = ease(clamp((ar - 1.6) / (16 / 9 - 1.6)));
     const fw = mob ? W : Math.max(W, 1.6 * H);   // вужче за 16:10 — % від кадру 16:10 по центру: проміжки у vmin як в еталоні
-    const u = m.k = mob ? Math.min(W, H * 390 / 844) / 100 : m.u;   // портрет ширший за телефон-еталон — форми за висотою
+    const u = mob ? Math.min(W, H * 390 / 844) / 100 : m.u;   // портрет ширший за телефон-еталон — форми за висотою
     const field = [], layers = Array.from({ length: DEPTH }, () => []);
     (mob ? MOB : DESK).forEach(it => {
       const xp = W / 2 + (it.x - 50) * fw / 100;
-      const x = it.at ? it.at(m)[0] : mob || !it.ax ? xp : it.x == null ? it.ax(m) : lerp(xp, it.ax(m), t);
-      if (it.wide && (ar < 2 || !it.wide(x, m))) return;
-      const y = it.at ? it.at(m)[1] : it.y * H / 100;
-      if (it.k) { m[it.k] = x; m[`${it.k}y`] = y; }
-      const sil = PIECES[`${it.f}/${it.id || SIL[it.f]}`];
-      const k = it.s * u / (it.by === 'h' ? sil.h : it.by === 'w' ? sil.w : Math.max(sil.w, sil.h));
-      const tf = `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${it.a}) scale(${k.toFixed(5)}) translate(${(-sil.cx).toFixed(2)} ${(-sil.cy).toFixed(2)})`;
-      field.push(use(sil, tf, DEEP, ` opacity="${it.o}"`));
-      layers[0].push(use(sil, tf, DEEP));
-      if (it.id) {
-        // малий елемент: [1] у своєму кольорі; той, що лежить над великою формою, — повторено на кожній глибині
-        for (let L = 1; L < (it.over ? DEPTH : 2); L++) layers[L].push(use(sil, tf, sil.color));
-      } else {
-        ART[it.f].forEach((ids, L) => ids.forEach(id => { const p = PIECES[`${it.f}/${id}`]; layers[L + 1].push(use(p, tf, p.color)); }));
-      }
+      const x = mob || !it.ax ? xp : lerp(xp, it.ax(m), t), y = it.y * H / 100;
+      const [bw, bh] = BOX[it.n];
+      const k = it.s * u / Math.max(bw, bh);
+      const tf = `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${it.a}) scale(${k.toFixed(5)}) translate(${-bw / 2} ${-bh / 2})`;
+      const tn = tone(it.t);
+      field.push(use(it.n, tf, tn));
+      layers[0].push(use(it.n, tf, tn));
+      layers[1].push(use(it.n, tf, token(it.c)));
     });
     const { x, y, s } = heroFieldBox;
     fieldArt.setAttribute('viewBox', `${x.toFixed(2)} ${y.toFixed(2)} ${s} ${s}`);
@@ -1066,9 +1041,10 @@
   document.fonts?.ready.then(compose);   // ширина ліду й claim залежить від шрифту
 
   // Лупа «Фокус»: з'являється лише на справжній рух миші (на тачі — разовий тап), без автономного руху.
-  // Бокс 2Rb×2Rb їде translate3d, радіус — clip-path на ньому; усередині маленький svg тих самих форм (спільні defs),
-  // щокадру міняється лише його viewBox — фокус ×k векторний, перемальовується тільки коло лупи.
-  // Тихі зони (текст, кнопки, шапка) гасять кольорові шари — лишається основа.
+  // Бокс 2Rb×2Rb їде translate3d, радіус — clip-path на ньому; усередині svg тих самих форм (ті самі <use> спрайта)
+  // у координатах hero, зсунутий і збільшений CSS-transform — фокус ×k векторний, без layout; малюється лише коло лупи.
+  // Тихі зони (текст, кнопки, шапка) гасять колір — лишається тон. Зіниця ока в «C» дивиться туди ж, куди лупа.
+  // rAF — лише поки щось рухається: лупа спокійна — цикл спить до руху або до ховання за простоєм.
   if (!reduce && HERO_ART) {
     // криві з брифу (CSS cubic-bezier) для JS-таймлайну
     const bezier = (x1, y1, x2, y2) => {
@@ -1087,18 +1063,19 @@
     // твін завжди стартує з поточного значення: рух посеред ховання розвертає лупу без стрибка
     const tween = () => ({ a: 0, b: 0, t0: 0, d: 1, e: SOFT });
     const val = (w, now) => w.a + (w.b - w.a) * w.e(clamp((now - w.t0) / w.d));
-    const to = (w, b, now, delay, d, e) => { w.a = val(w, now); w.b = b; w.t0 = now + delay; w.d = d; w.e = e; };
+    const to = (w, b, now, delay, d, e) => { w.a = val(w, now); w.b = b; w.t0 = now + delay; w.d = d; w.e = e; busy = Math.max(busy, w.t0 + d); };
 
-    const lens = div(heroHidden, 'hero__lens');
+    const lens = heroHidden.appendChild(Object.assign(document.createElement('div'), { className: 'hero__lens' }));
     const loupe = lens.appendChild(svgEl('svg', { class: 'hero__loupe' }));
     loupeDepth = Array.from({ length: DEPTH }, () => loupe.appendChild(svgEl('g')));
-    const tones = loupeDepth.slice(1);   // кольорові шари; [0] — силуети, видимі одразу
+    const tones = loupeDepth.slice(1);   // кольоровий шар; [0] — тон, видимий одразу
     tones.forEach(g => { g.style.opacity = 0; });
     compose();
 
     const fine = matchMedia('(hover: hover) and (pointer: fine)');
-    const QZ = [[.30, .85], [.20, .75], [.10, .65], [0, .55]];   // тихі зони: кольорові шари гаснуть зверху вниз
-    // поява: радіус, фокус k 1→2 (+60 мс), шари знизу вгору (+200 мс, крок 60 мс); тач — ще й утримання
+    const QZ = [[0, .55]];   // тихі зони: колір гасне, лишається тон
+    const KMAX = 1.5;   // фокус лупи: помірний — край великої форми під лінзою лишається впізнаваним
+    // поява: радіус, фокус k 1→KMAX (+60 мс), колір (+200 мс); тач — ще й утримання
     const SHOW = { mouse: { r: 300, k: 420 }, touch: { r: 280, k: 360, hold: 420 + 700 } };
     const radius = m => {
       const v = Math.min(innerWidth, innerHeight);
@@ -1106,9 +1083,13 @@
     };
     const tr = tween(), tz = tween(), tl = QZ.map(tween);
     let state = 'off', mode = 'mouse', R = 60, Rb = 0, zones = [], hx = 0, hy = 0, hw = 0, hh = 0;
-    let px = 0, py = 0, lx = 0, ly = 0, vpx = 0, vpy = 0, vs = 0, ks = 2, kv = 0, qz = 0;
+    let px = 0, py = 0, lx = 0, ly = 0, vpx = 0, vpy = 0, vs = 0, ks = KMAX, kv = 0, qz = 0;
     let lastMove = 0, holdUntil = 0, hideEnd = 0, locked = false, ax = -1e4, ay = -1e4;
-    let raf = 0, last = 0, clip = '', vbox = '';
+    let raf = 0, last = 0, clip = '', loupeTf = '', busy = 0, idle = 0;
+    // зіниця ока в «C»: зсув — частка ока (12% по кожній осі, у межах 8–15%), повне відхилення — курсор за 30vmin;
+    // у спокої (лупа сховалась) — у центрі. Зіниця — окремий svg над оком: CSS-transform без layout
+    const pupil = $('.hero__pupil'), PUPIL = [156 * .12, 81 * .12];
+    let eyeX = 0, eyeY = 0, eyeU = 1, reach = 1, ex = 0, ey = 0, pupilTf = '';
     const ops = tones.map(() => '');
 
     // прямокутник hero — на resize і на появу (не щокадру)
@@ -1121,13 +1102,18 @@
       if (rb !== Rb) {
         Rb = rb;
         lens.style.width = lens.style.height = `${2 * Rb}px`;
-        loupe.setAttribute('width', 2 * Rb); loupe.setAttribute('height', 2 * Rb);
+      }
+      const vb = `0 0 ${hw} ${hh}`;   // svg лупи — у координатах hero, як поле
+      if (loupe.getAttribute('viewBox') !== vb) {
+        loupe.setAttribute('viewBox', vb); loupe.setAttribute('width', hw); loupe.setAttribute('height', hh);
       }
       const box = (r, pad = 0) => ({ l: r.left - hx - pad, t: r.top - hy - pad, r: r.right - hx + pad, b: r.bottom - hy + pad });
       const claim = document.createRange();
       claim.selectNodeContents($('.hero__claim'));   // межі самого тексту, не колонки
       zones = [box($('.hero__intro').getBoundingClientRect(), 16), box(claim.getBoundingClientRect()),
         { l: -1e5, t: -1e5, r: 1e5, b: hdr.offsetHeight - hy }];
+      const e = $('.hero__slot').getBoundingClientRect();
+      eyeX = e.left + e.width / 2 - hx; eyeY = e.top + e.height / 2 - hy; eyeU = e.width / 156; reach = .3 * Math.min(hw, hh);
     }
     // близькість до тихої зони: 0, поки лінза лише торкається прямокутника (d ≥ R), 1 — коли зайшла на нього на 60% радіуса
     const quiet = (x, y) => zones.reduce((q, z) => {
@@ -1143,7 +1129,7 @@
       mode = m; R = radius(m);
       px = cx - hx; py = cy - hy;
       if (fresh) {
-        lx = vpx = px; ly = vpy = py; vs = 0; ks = 2; kv = 0;
+        lx = vpx = px; ly = vpy = py; vs = 0; ks = KMAX; kv = 0;
         qz = quiet(px, py);
         lens.style.visibility = 'visible';
       }
@@ -1175,17 +1161,30 @@
       lx += (px - lx) * a; ly += (py - ly) * a;
       vs += (Math.hypot(px - vpx, py - vpy) / dt - vs) * (1 - Math.exp(-dt / 80));
       vpx = px; vpy = py;
-      const kt = lerp(2, 1.8, clamp(vs / 2));
+      const kt = lerp(KMAX, KMAX - .2, clamp(vs / 2));
       // пружина k (stiffness 200, damping 22, mass 1), кроки ≤ 8 мс
       for (let n = Math.ceil(dt / 8), h = dt / 1000 / n, i = 0; i < n; i++) { kv += (200 * (kt - ks) - 22 * kv) * h; ks += kv * h; }
-      qz += (quiet(lx, ly) - qz) * (1 - Math.exp(-dt / 120));
+      const qt = quiet(lx, ly);
+      qz += (qt - qz) * (1 - Math.exp(-dt / 120));
+      // зіниця: до курсора, поки лупа на місці; ховається лупа — повертається в центр (τ 90 мс)
+      let tx = 0, ty = 0;
+      if (state === 'on') {
+        const dx = px - eyeX, dy = py - eyeY, d = Math.hypot(dx, dy) || 1, g = Math.min(1, d / reach) / d;
+        tx = dx * g; ty = dy * g;
+      }
+      const b = 1 - Math.exp(-dt / 90);
+      ex += (tx - ex) * b; ey += (ty - ey) * b;
+      const pupilStill = Math.abs(tx - ex) < 2e-3 && Math.abs(ty - ey) < 2e-3;
+      if (state !== 'on' && pupilStill) ex = ey = 0;
+      const pt = ex || ey ? `translate3d(${(ex * PUPIL[0] * eyeU).toFixed(2)}px,${(ey * PUPIL[1] * eyeU).toFixed(2)}px,0)` : '';
+      if (pt !== pupilTf && pupil) { pupilTf = pt; pupil.style.transform = pt; }
 
-      // кадр: transform, clip-path, opacity шарів і viewBox svg лупи (перемальовується лише бокс 2Rb×2Rb)
+      // кадр: лише transform, clip-path і opacity (перемальовується лише бокс 2Rb×2Rb)
       const r = val(tr, now), k = 1 + (ks - 1) * val(tz, now);
       lens.style.transform = `translate3d(${(lx - Rb).toFixed(2)}px,${(ly - Rb).toFixed(2)}px,0)`;
-      // у центрі лінзи — та сама точка поля, ×k: видно квадрат 2Rb / k навколо неї
-      const v = Rb / k, vb = `${(lx - v).toFixed(2)} ${(ly - v).toFixed(2)} ${(2 * v).toFixed(2)} ${(2 * v).toFixed(2)}`;
-      if (vb !== vbox) { vbox = vb; loupe.setAttribute('viewBox', vb); }
+      // у центрі лінзи — та сама точка поля, ×k: svg лупи збільшено від кута й зсунуто так, що (lx, ly) — у центрі бокса
+      const lt = `translate(${(Rb - lx * k).toFixed(2)}px,${(Rb - ly * k).toFixed(2)}px) scale(${k.toFixed(4)})`;
+      if (lt !== loupeTf) { loupeTf = lt; loupe.style.transform = lt; }
       const c = `circle(${Math.max(r, 0).toFixed(2)}px at 50% 50%)`;
       if (c !== clip) { clip = c; lens.style.clipPath = c; }
       tl.forEach((w, i) => {
@@ -1193,8 +1192,14 @@
         if (o !== ops[i]) { ops[i] = o; tones[i].style.opacity = o; }
       });
 
-      if (state === 'hiding' && now >= hideEnd) {
-        state = 'off'; lens.style.visibility = 'hidden'; raf = 0;
+      if (state === 'hiding' && now >= hideEnd) { state = 'off'; lens.style.visibility = 'hidden'; }
+      if (state === 'off' && pupilStill) { raf = 0; return; }
+      // спокій: курсор стоїть, усе доїхало — цикл спить до руху або до ховання за простоєм
+      if (state === 'on' && now > busy && pupilStill && Math.abs(px - lx) < .05 && Math.abs(py - ly) < .05 &&
+        vs < .01 && Math.abs(kt - ks) < 1e-3 && Math.abs(kv) < 1e-3 && Math.abs(qt - qz) < 2e-3) {
+        raf = 0;
+        clearTimeout(idle);
+        idle = setTimeout(wake, Math.max(0, (mode === 'touch' ? holdUntil : lastMove + 1600) - now) + 20);
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -1211,6 +1216,7 @@
       if (px < 0 || py < 0 || px >= hw || py >= hh) { hide(200, now); return; }
       lastMove = now;
       if (state !== 'on') show('mouse', e.clientX, e.clientY, now);
+      else wake();
     }, { passive: true });
     // миттєве ховання: курсор пішов із вікна, вкладка втратила фокус чи стала невидимою
     document.addEventListener('mouseout', e => { if (!e.relatedTarget) hideNow(); });
@@ -1241,12 +1247,18 @@
     });
   }
 
-  /* ---------- 12. Мобільне меню (≤1180px) ---------- */
+  /* ---------- 12. Мобільне меню (≤ --bp-menu, 1180px) ---------- */
   const burger = $('.hdr__burger');
   const menu = $('#menu');
   const menuLinks = $$('a', menu);
   const menuOpen = () => menu.classList.contains('is-open');
   function setMenu(open, restoreFocus = true) {
+    // коло меню розкривається з центру бургера і згортається туди ж (шапка могла зʼїхати над футером)
+    if (burger.offsetParent) {
+      const b = burger.getBoundingClientRect();
+      menu.style.setProperty('--mx', `${(menu.offsetWidth - b.left - b.width / 2).toFixed(1)}px`);
+      menu.style.setProperty('--my', `${(b.top + b.height / 2).toFixed(1)}px`);
+    }
     burger.setAttribute('aria-expanded', open);
     menu.classList.toggle('is-open', open);
     hdr.classList.toggle('is-open', open);
@@ -1261,27 +1273,54 @@
     if (e.key === 'Escape') { e.preventDefault(); setMenu(false); return; }
     if (e.key !== 'Tab') return;
     // фокус ходить по колу: бургер + пункти меню
-    const f = [burger, ...menuLinks];
+    const f = [burger, ...menuLinks.filter(a => a.offsetParent)];   // лише видимі (мова в меню — до 760px)
     const i = f.indexOf(document.activeElement);
     const out = e.shiftKey ? i <= 0 : (i < 0 || i === f.length - 1);
     if (out) { e.preventDefault(); f[e.shiftKey ? f.length - 1 : 0].focus(); }
   });
-  matchMedia('(min-width: 1181px)').addEventListener('change', e => { if (e.matches && menuOpen()) setMenu(false, false); });
+  // один брейкпоінт із CSS (--bp-menu): ширше — меню немає, тож відкрите закриваємо й знімаємо блок скролу
+  const BP_MENU = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bp-menu')) || 1180;
+  matchMedia(`(min-width: ${BP_MENU + 1}px)`).addEventListener('change', e => {
+    if (!e.matches || !menuOpen()) return;
+    const inside = menu.contains(document.activeElement) || document.activeElement === document.body;   // меню вже сховане CSS — фокус міг злетіти
+    setMenu(false, false);
+    if (inside) $('.hdr__logo').focus();   // бургер сховано — фокус на початок шапки
+  });
 
-  /* ---------- 13. Тікер партнерів: пауза по тапу (hover і фокус — у CSS) ---------- */
-  if (!reduce) $$('.marquee').forEach(m => m.addEventListener('click', e => {
-    if (!e.target.closest('a')) m.classList.toggle('is-paused');   // тап по логотипу — це перехід, не пауза
-  }));
+  /* ---------- 13. Стрічка партнерів: кнопка паузи; поза кадром і на прихованій вкладці стоїть (hover і фокус — у CSS) ---------- */
+  const marquee = $('.marquee');
+  const mToggle = $('.marquee__toggle');
+  // поява по одному: копія списку (для безшовної стрічки) — з тими самими кроками, тож стрічка рушає, щойно вийшло останнє лого
+  const mItems = $$('.marquee__list', marquee).map(l => $$('li', l));
+  mItems.forEach(list => list.forEach((li, i) => li.style.setProperty('--i', i)));
+  marquee.style.setProperty('--run', `${800 + (mItems[0].length - 1) * 70}ms`);
+  if (reduce) mToggle.closest('.partners__foot').hidden = true;   // статичний грід — пауза не потрібна
+  else {
+    mToggle.addEventListener('click', () => {
+      const paused = mToggle.getAttribute('aria-pressed') !== 'true';
+      mToggle.setAttribute('aria-pressed', paused);
+      marquee.classList.toggle('is-paused', paused);
+    });
+    let mSeen = false;
+    const mSync = () => marquee.classList.toggle('is-off', !mSeen || document.hidden);
+    new IntersectionObserver(([e]) => { mSeen = e.isIntersecting; mSync(); }).observe(marquee);
+    document.addEventListener('visibilitychange', mSync);
+    mSync();
+  }
 
   /* ---------- 14. Новини: слайдер (нативний скрол зі snap), кнопки, перетягування мишею ---------- */
   const track = $('.ntrack');
   const newsBtns = $$('.news__btn');
   const newsCards = $$('.newscard', track);
+  const newsNum = $('.news__count b');
+  $('.news__count span').textContent = pad2(newsCards.length);
   const stepW = () => newsCards[1] ? newsCards[1].offsetLeft - newsCards[0].offsetLeft : track.clientWidth;
+  // краї вимикають стрілки; номер — перша картка в кадрі
   const newsEdges = () => {
     const max = track.scrollWidth - track.clientWidth;
     newsBtns[0].disabled = track.scrollLeft <= 2;
     newsBtns[1].disabled = track.scrollLeft >= max - 2;
+    newsNum.textContent = pad2(Math.round(track.scrollLeft / stepW()) + 1);
   };
   newsBtns.forEach(b => b.addEventListener('click', () => {
     track.scrollBy({ left: +b.dataset.step * stepW(), behavior: reduce ? 'auto' : 'smooth' });
@@ -1332,7 +1371,7 @@
     el.style.setProperty('--x', `${(e.clientX - r.left).toFixed(0)}px`);
     el.style.setProperty('--y', `${(e.clientY - r.top).toFixed(0)}px`);
   };
-  $$('.btn, .req__btn, .rbtn, .mcard').forEach(el => {
+  $$('.btn, .req__btn, .mcard').forEach(el => {
     el.addEventListener('pointerenter', e => fillXY(el, e));
     el.addEventListener('pointerleave', e => fillXY(el, e));
     // фокус з клавіатури — від центру
