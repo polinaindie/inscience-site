@@ -70,16 +70,27 @@
   };
 
   /* ---------- 2. Іконка в логотипі: один цикл око → квітка → стрілки → серце → око і стоп (WCAG 2.2.2) ---------- */
-  const heroIcons = $$('.hero__ico');
+  // Лаймовий пагорб (розділ 7) — копія вмісту hero без h1, неактивна; іконки в копії міняються разом з оригіналом
+  const heroDome = $('.hero__dome');
+  if (!reduce) {
+    const copy = $('.hero__content').cloneNode(true);
+    $('h1', copy).remove();
+    copy.inert = true;
+    heroDome.appendChild(copy);
+  }
+  const heroIcoSets = $$('.hero__slot').map(s => $$('.hero__ico', s));
+  const heroIcons = heroIcoSets[0];
   let heroIdx = 0, heroLeft = 0, heroTimer = 0, heroHp = 0;
   const heroStep = () => {
     // поки hero скролять — пауза
     if (heroHp > .05) { heroTimer = setTimeout(heroStep, 400); return; }
-    const cur = heroIcons[heroIdx];
-    cur.classList.remove('is-on'); cur.classList.add('is-out');
-    setTimeout(() => cur.classList.remove('is-out'), 700);
+    heroIcoSets.forEach(set => {
+      const cur = set[heroIdx];
+      cur.classList.remove('is-on'); cur.classList.add('is-out');
+      setTimeout(() => cur.classList.remove('is-out'), 700);
+      set[(heroIdx + 1) % set.length].classList.add('is-on');
+    });
     heroIdx = (heroIdx + 1) % heroIcons.length;
-    heroIcons[heroIdx].classList.add('is-on');
     heroTimer = --heroLeft > 0 ? setTimeout(heroStep, 1700) : 0;
   };
   // ще один цикл — на наведення на лого
@@ -278,112 +289,62 @@
     $('.dir__art', d).replaceChildren(svg);
   })).catch(err => console.warn('dir art', err));
 
-  /* ---------- 5а. «Про нас»: три кола-патерни — закочування, обертання, «дихання», паралакс і відхід ---------- */
-  // Кола-патерни брендбуку 2.3 (assets/patterns/) інлайнимо як SVG. Поки секція наїжджає, кола закочуються на своє
-  // місце збоку й знизу: зсув прив'язаний до скролу входу (у кожного кола своє вікно, ease-out наприкінці), кут — це
-  // пройдений шлях / радіус, як у справжнього кочення. Далі кожне коло повільно обертається зі своєю швидкістю
-  // й напрямком і ледь «дихає»; скрол дає невеликий паралакс (у кожного кола свій).
-  // Коли секція йде з екрана, кола відходять по черзі (overlapping action): кожне у своєму вікні прогресу
-  // зменшується, відпливає вгору й назовні, докручується й гасне. rAF працює, лише поки секція в кадрі;
-  // reduced motion — кола стоять
-  const orbEls = $$('.about__orb');
-  orbEls.forEach(el => {
-    const name = el.dataset.pat;
-    fetch(`assets/patterns/${name}.svg`).then(r => r.text()).then(txt => {
-      const doc = new DOMParser().parseFromString(txt, 'image/svg+xml').documentElement;
-      const svg = svgEl('svg', { viewBox: doc.getAttribute('viewBox') });
-      svg.innerHTML = doc.innerHTML
-        .replace(/id="([^"]+)"/g, `id="pat-${name}-$1"`)
-        .replace(/url\(#([^)]+)\)/g, `url(#pat-${name}-$1)`);
-      $('.about__orb-i', el).replaceChildren(svg);
-    }).catch(err => console.warn('pattern', name, err));
-  });
-  // spin — °/с (знак — напрямок); breath — період «дихання», с; par — паралакс, частка екрана;
-  // in — вікно закочування в прогресі входу; fx / fy — звідки котиться (частки шару кіл: праворуч / знизу);
-  // out — вікно відходу в прогресі виходу секції; dx / dy — куди відпливає (частки екрана), ds — зменшення, dr — докрут
-  const ORB = [
-    { spin: 3, breath: 7.4, ph: 0, par: .05, in: [.08, .84], fx: .6, fy: 0, out: [0, .66], dx: .08, dy: -.34, ds: -.34, dr: 40 },
-    { spin: -4.6, breath: 6.1, ph: 2.1, par: .1, in: [.22, .94], fx: .72, fy: .14, out: [.1, .8], dx: -.12, dy: -.46, ds: -.46, dr: -60 },
-    { spin: 2.2, breath: 8.6, ph: 4.2, par: .03, in: [.34, 1], fx: .26, fy: .5, out: [.22, .96], dx: .12, dy: -.26, ds: -.3, dr: 34 },
-  ];
-  const orbs = orbEls.map((el, k) => ({ el, i: $('.about__orb-i', el), ang: k * 20, r: 1, ...ORB[k] }));
-  let orbOn = false, orbRaf = 0, orbLast = 0, orbTime = 0, orbTop = 0, orbExit = 0, orbIn = 1, orbW = 0, orbsH = 0;
-  const orbRender = () => {
-    const vw = innerWidth, vh = innerHeight;
-    orbs.forEach(o => {
-      // закочування: решта шляху (котиться ліворуч і вгору) і кут кочення проти годинникової = шлях / радіус
-      const k = 1 - easeOut(range(orbIn, o.in[0], o.in[1]));
-      const ix = o.fx * orbW * k, iy = o.fy * orbsH * k;
-      const roll = -Math.hypot(ix, iy) / o.r * 180 / Math.PI;
-      const t = ease(range(orbExit, o.out[0], o.out[1]));
-      const s = (1 + .016 * Math.sin(orbTime * 2 * Math.PI / o.breath + o.ph)) * (1 + o.ds * t);
-      const x = ix + o.dx * t * vw, y = iy + (o.dy * t + o.par * orbTop) * vh;
-      o.i.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${(o.ang + roll + o.dr * t).toFixed(2)}deg) scale(${s.toFixed(4)})`;
-      o.i.style.opacity = t > .5 ? (1 - range(t, .5, 1)).toFixed(3) : '';
-    });
-  };
-  const orbTick = now => {
-    const dt = Math.min(64, now - (orbLast || now)) / 1000;
-    orbLast = now;
-    orbTime += dt;
-    orbs.forEach(o => { o.ang += o.spin * dt; });
-    orbRender();
-    orbRaf = orbOn ? requestAnimationFrame(orbTick) : 0;
-    if (!orbRaf) orbLast = 0;
-  };
-  // гілка скрол-циклу (frame): лише числа — верх секції в екранах, прогрес входу й виходу. Вхід — шар кіл піднімається
-  // від низу екрана на свою висоту, але не більше екрана (desktop: шар — уся секція, тож вхід = наїзд на hero; мобільний:
-  // смуга під текстом, кола закочуються, коли до неї доходить скрол). Вихід починається, коли низ секції піднявся над
-  // краєм екрана (на мобільному кола спершу трохи стоять у кадрі цілими), і закінчується, коли низ секції — на 15%
-  // висоти екрана. Поки rAF кіл спить (секція поза кадром), кадр малюємо тут — кола не блимають на місці перед входом
-  const orbsBox = $('.about__orbs');
-  let orbsOff = 0;
-  new ResizeObserver(() => {
-    orbsH = orbsBox.offsetHeight; orbW = orbsBox.offsetWidth; orbsOff = orbsBox.offsetTop;
-    orbs.forEach(o => { o.r = o.el.offsetWidth / 2 || 1; });
-    if (!reduce) aboutOrbs($('#about').getBoundingClientRect(), innerHeight);
-  }).observe(orbsBox);
-  const aboutOrbs = (r, vh) => {
-    const from = Math.min(vh, orbsH + vh * .2), to = vh * .15;
-    orbTop = clamp(r.top / vh, -1, 1);
-    orbIn = clamp((vh - r.top - orbsOff) / Math.min(vh, orbsH || vh));
-    orbExit = clamp((from - r.bottom) / (from - to));
-    if (!orbRaf) orbRender();
-  };
-  if (!reduce) new IntersectionObserver(([e]) => {
-    orbOn = e.isIntersecting;
-    if (orbOn && !orbRaf) orbRaf = requestAnimationFrame(orbTick);
-  }).observe($('#about'));
-
-  /* ---------- 5б. «Про нас»: лід проявляється словами за скролом ---------- */
+  /* ---------- 5. «Про нас»: текст проявляється словами за скролом, цифри докручуються ---------- */
   // Слова переходять з приглушеного (той самий колір, низька непрозорість) у повний, прив'язано до скролу: почали,
-  // коли верх ліду на 92% висоти екрана, закінчили, коли його низ на 80% — або коли секція стала на місце (верх біля
-  // краю екрана), якщо це раніше: у спокої лід завжди повний. Край проявлення м'який — на кілька слів. Скрінрідер
-  // читає цілий текст, розбита на слова копія aria-hidden. Без JS і при reduced motion — одразу повний колір
+  // коли верх тексту на 92% висоти екрана, закінчили, коли його низ на 80%. Край проявлення м'який — на кілька слів;
+  // маркер (<mark>) проявляється цілком, як одне слово. Скрінрідер читає цілий текст, розбита на слова копія aria-hidden.
+  // Без JS і при reduced motion — одразу повний колір
   const lead = $('[data-words]');
   const leadWords = [];
   if (lead && !reduce) {
     const text = lead.textContent.replace(/\s+/g, ' ').trim();
     const vis = mk('span', '');
     vis.setAttribute('aria-hidden', 'true');
-    text.split(' ').forEach((t, i) => {
-      if (i) vis.append(' ');
-      leadWords.push(vis.appendChild(Object.assign(mk('span', 'about__w'), { textContent: t })));
+    [...lead.childNodes].forEach(n => {
+      if (n.nodeType !== 3) { const m = n.cloneNode(true); m.classList.add('about__w'); leadWords.push(vis.appendChild(m)); return; }
+      n.textContent.replace(/\s+/g, ' ').split(/( )/).forEach(t => {
+        if (t === ' ') vis.append(' ');
+        else if (t) leadWords.push(vis.appendChild(Object.assign(mk('span', 'about__w'), { textContent: t })));
+      });
     });
     lead.replaceChildren(Object.assign(mk('span', 'sr-only'), { textContent: text }), vis);
   }
   const LEAD_DIM = .24, LEAD_SOFT = 6;   // непрозорість приглушеного слова; ширина м'якого краю, слів
   let leadP = -1;
   // гілка скрол-циклу (frame): прогрес → непрозорість кожного слова (лише коли прогрес змінився)
-  const leadScrub = (ar, vh) => {
+  const leadScrub = vh => {
     const r = lead.getBoundingClientRect();
-    const a = vh * .92, end = Math.max(vh * .8 - r.height, r.top - ar.top);   // верх ліду в кінці проявлення
+    const a = vh * .92, end = vh * .8 - r.height;   // верх тексту в кінці проявлення
     const p = clamp((a - r.top) / Math.max(1, a - end));
     if (p === leadP) return;
     leadP = p;
     const n = leadWords.length, head = p * (n + LEAD_SOFT);
     leadWords.forEach((w, i) => { w.style.opacity = lerp(LEAD_DIM, 1, clamp((head - i) / LEAD_SOFT)).toFixed(3); });
   };
+
+  // Цифри: коли список у кадрі, кожна докручується до свого значення (1.4 с, ease-out, по черзі через 150 мс); великі —
+  // з останніх 400, рік — без розрядного пробілу
+  const facts = $$('.fact b[data-count]');
+  if (facts.length && !reduce) {
+    const fmt = (b, v) => (b.dataset.count.length > 3 && !/^20\d\d$/.test(b.dataset.count) ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : String(v)) + (b.dataset.suffix || '');
+    facts.forEach(b => { const to = +b.dataset.count; b._from = to > 1000 ? to - 400 : 0; b.textContent = fmt(b, b._from); });
+    const fio = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      fio.disconnect();
+      const t0 = performance.now();
+      const tick = now => {
+        let done = true;
+        facts.forEach((b, i) => {
+          const k = clamp((now - t0 - i * 150) / 1400), to = +b.dataset.count;
+          if (k < 1) done = false;
+          b.textContent = fmt(b, Math.round(lerp(b._from, to, 1 - (1 - k) ** 3)));
+        });
+        if (!done) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, { rootMargin: '0px 0px -15% 0px' });
+    fio.observe($('.facts'));
+  }
 
   /* ---------- 6. Проєкти: слайдер карток (стрілки й лічильник — розділ 14) ---------- */
   // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
@@ -408,7 +369,7 @@
   }));
 
 
-  /* ---------- 7. Скрол-цикл: hero-картотека, кола й лід «Про нас», «Підтримати», тема хедера ---------- */
+  /* ---------- 7. Скрол-цикл: лаймовий пагорб hero, лід «Про нас», «Підтримати», тема хедера ---------- */
   const hero = $('.hero');
   const heroContent = $('.hero__content');
   const heroSticky = $('.hero__sticky');
@@ -434,10 +395,8 @@
   }
   sizeField();
   let heroLensScroll = () => {};   // лупа hero (розділ 11) згортається, коли сцену скролять
-  // «Про нас» заходить на другий екран hero і заїжджає поверх закріпленого hero знизу
   if (!reduce) document.documentElement.classList.add('has-stack');
-  // той самий жест для «Про нас пишуть» над новинами й «Підтримати» над партнерами: попередня секція стоїть, коли
-  // дійшла низом до краю екрана, наступна наїжджає поверх. CSS бере висоту того, що стоїть (--wh, на скільки підняти
+  // «Про нас пишуть» наїжджає на новини: попередня секція стоїть, коли дійшла низом до краю екрана, наступна наїжджає поверх. CSS бере висоту того, що стоїть (--wh, на скільки підняти
   // sticky), і того, що наїжджає (--mh, наїзд — не більше екрана)
   const newsSec = $('#news'), mediaSec = $('#media');
   const support = $('.support');
@@ -471,6 +430,7 @@
   function renderSupport(sp) {
     if (sp > .4 && !supportIn) supportShow('instant' in supportInner.dataset);
   }
+  const heroBottom = $('.hero__bottom');
   const hdr = $('.hdr');
   const ftr = $('.ftr');
   const sections = $$('main > section, .ftr');
@@ -484,15 +444,24 @@
   function frame() {
     const vw = innerWidth, vh = innerHeight;
 
-    // HERO: «Про нас» заїжджає поверх знизу (hp 0 → 1 — рівно один екран), hero стоїть на місці
+    // HERO стоїть один екран (hp 0 → 1): знизу підіймається лаймовий пагорб — коло з центром на пів екрана нижче краю,
+    // від радіуса пів екрана (дуга якраз торкається низу) до кутів екрана; нижній текст гасне за перші 30%
     const hp = reduce ? 0 : progress(hero);
     heroHp = hp;
     heroLensScroll(hp);
+    let domeTop = vh;
+    if (!reduce) {
+      const cy = vh * 1.5, r = lerp(vh * .5, Math.hypot(vw / 2, cy) + 20, hp);
+      domeTop = cy - r;
+      heroDome.style.clipPath = `circle(${r.toFixed(1)}px at 50% ${cy.toFixed(1)}px)`;
+      const t = clamp(hp / .3);
+      heroBottom.style.opacity = t ? (1 - t).toFixed(3) : '';
+      heroBottom.style.transform = t ? `translateY(${(30 * t).toFixed(1)}px)` : '';
+      heroBottom.style.visibility = t >= 1 ? 'hidden' : '';
+    }
 
-    // ПРО НАС: закочування, паралакс і відхід кіл (малює їхній rAF, поки секція в кадрі); лід — словами за скролом
-    const ar = about.getBoundingClientRect();
-    if (!reduce) aboutOrbs(ar, vh);
-    if (leadWords.length) leadScrub(ar, vh);
+    // ПРО НАС: текст — словами за скролом
+    if (leadWords.length) leadScrub(vh);
 
     // ПІДТРИМКА
     const sr = support.getBoundingClientRect();
@@ -502,17 +471,17 @@
     // Тема хедера за секцією під ним
     const y = 40;
     let theme = 'light', mark = false, lime = false;
-    for (const s of sections) {
+    for (let s of sections) {
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
         if (s === newsSec && !mediaSec.hidden && mediaSec.getBoundingClientRect().top <= y) continue;   // лайм уже наїхав під шапку
-        if (s === hero) {
-          if (about.getBoundingClientRect().top <= y) continue;   // «Про нас» уже наїхала під шапку
+        if (s === hero && domeTop > y) {
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
           theme = 'blue';
         }
         else if (s === support) theme = 'solid-blue';
-        else if (s.dataset.theme === 'field') {
+        else if (s === hero || s.dataset.theme === 'field') {
+          if (s === hero) s = about;   // пагорб уже під шапкою — шапка лаймова, як «Про нас»
           theme = 'field';
           const field = s.style.getPropertyValue('--field');
           lime = field.includes('--lime');   // лаймова «Підтримати» на лаймовому полі зливається — CSS перефарбує її

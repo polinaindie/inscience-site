@@ -348,42 +348,32 @@ main:focus { outline: none; }
 .hero__ctas { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 12px; margin-top: 28px; }
 .hero__ctas .btn { justify-content: center; }
 
-/* «Про нас» заходить на другий екран hero і заїжджає поверх закріпленого hero знизу */
-.has-stack .about { z-index: 1; margin-top: -100vh; margin-top: -100svh; }
+/* Лаймовий пагорб: шар поверх hero з копією логотипа в синьому; видно лише всередині дуги — clip-path circle з центром
+   нижче екрана (полога дуга, не коло), радіус росте за скролом hero (main.js). Нижній текст hero гасне раніше */
+.hero__dome { position: absolute; inset: 0; z-index: 1; background: var(--lime); pointer-events: none; clip-path: circle(0 at 50% 200%); }
+.hero__dome .hero__content { color: var(--blue); }
+.hero__dome .hero__bottom { visibility: hidden; }
+.hero__dome .hero__ico { color: var(--blue); --hole: var(--lime); }
+.hero__bottom { will-change: opacity, transform; }
 
 /* ==========================================================
-   2. ПРО НАС — кольорове поле, мова «Підтримати»
+   2. ПРО НАС — лаймове поле, великий текст з маркерами, цифри
    ========================================================== */
-/* Один екран, як слайд брендбуку «Knowledge in motion»: ліворуч великий заголовок у два рядки щільним набором по
-   лівому краю і під ним великий лід колонкою; праворуч — три кола-патерни, скупчені й за краєм кадру */
-.about {
-  position: relative; overflow: clip; display: flex;
-  min-height: 100vh; min-height: 100svh; padding: calc(var(--hdr) + 8vh) 0 8vh;
-  background: var(--field); color: var(--on); --hole: var(--field);
-}
-.about__grid {
-  position: relative; z-index: 1; width: 100%;
-  display: flex; flex-direction: column; align-items: flex-start; gap: clamp(28px, 5vh, 56px);
-  --t: clamp(46px, min(5.6vw, 10.5vh), 112px);   /* кегль заголовка; рядок — .86 кегля */
-}
-.about__title { width: max-content; max-width: 100%; font-size: var(--t); line-height: .86; }
-.about__body { display: flex; flex-direction: column; gap: clamp(28px, 4.4vh, 44px); align-items: flex-start; }
-/* Лід — рівня підзаголовка: Recht 400, трекінг м'якший, ніж у 24px-ліду (великий кегль не злипається).
-   Колонка — до кіл (вони з 42% ширини); проявлення словами за скролом — main.js (непрозорість кожного слова) */
-.about .lead { max-width: min(17em, calc(48vw - var(--pad))); font-size: clamp(28px, min(2.6vw, 4.6vh), 44px); line-height: 1.16; letter-spacing: -.02em; }
+/* Продовження пагорба hero: те саме лаймове поле, синій текст (великий кегль — контраст 3.4:1, AA для великого),
+   підписи цифр — чорнило */
+.about { position: relative; background: var(--field); color: var(--blue); padding: clamp(120px, 14vw, 240px) 0 clamp(96px, 10vw, 160px); }
+.about__in { display: grid; justify-items: start; }
+.about__title { margin-bottom: clamp(28px, 3.4vw, 56px); }
+/* Recht 400, як заголовки; маркери — фраза на кольоровій плашці, плашка переноситься разом з рядком */
+.about__text { max-width: 1500px; font-size: clamp(30px, 4vw, 76px); line-height: 1.26; letter-spacing: -.035em; }
+.about__text mark { background: var(--bg); color: var(--fg); padding: 0 .14em; margin: 0 .02em; border-radius: .24em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .about__w { transition: opacity .12s linear; }
-/* Кола — шар під текстом у правій частині секції; центр (--x, --y) — у частках шару, діаметр --d.
-   Внутрішній елемент закочує, крутить і відводить скрипт (transform, opacity) */
-.about__orbs { position: absolute; z-index: 0; top: 0; right: 0; bottom: 0; width: 58%; pointer-events: none; }
-.about__orb {
-  position: absolute; left: calc(var(--x) - var(--d) / 2); top: calc(var(--y) - var(--d) / 2);
-  width: var(--d); aspect-ratio: 1;
-}
-.about__orb--a { --d: min(66vh, 42vw); --x: 72%; --y: 17%; }
-.about__orb--b { --d: min(38vh, 24vw); --x: 33%; --y: 55%; }
-.about__orb--c { --d: min(62vh, 40vw); --x: 83%; --y: 85%; }
-.about__orb-i { display: block; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; will-change: transform; }
-.about__orb-i > svg { display: block; width: 100%; height: 100%; }
+.about__more { margin-top: clamp(32px, 4vw, 56px); }
+.btn--blue { background: var(--blue); color: #fff; --fill: var(--ink); --fill-on: #fff; --ring: var(--blue); }
+.facts { justify-self: stretch; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; margin-top: clamp(64px, 8vw, 140px); }
+.fact { display: grid; gap: 14px; align-content: start; }
+.fact b { font-weight: 400; font-size: clamp(56px, 7vw, 136px); line-height: .9; letter-spacing: -.05em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--ink); font-size: clamp(16px, 1.15vw, 19px); line-height: 1.35; letter-spacing: .005em; max-width: 22ch; }
 
 /* ==========================================================
    section head
@@ -651,7 +641,7 @@ html:not(.js) .ptabs { display: none; }
    6. НОВИНИ — слайдер
    ========================================================== */
 .news { padding: 16vh 0 14vh; }
-/* Наїзд — той самий жест, що «Про нас» на hero: попередня секція дійшла низом до краю екрана й стоїть (sticky),
+/* Наїзд: попередня секція дійшла низом до краю екрана й стоїть (sticky),
    наступна заходить поверх на свою висоту, але не більше екрана. Пара одна: новини → «Про нас пишуть».
    Висоту того, що стоїть (--wh), і того, що наїжджає (--mh), міряє скрипт. Без медіа — звичайний стик */
 .has-stack :is(.news, .media) { --o: min(100vh, var(--mh, 100vh)); --o: min(100svh, var(--mh, 100svh)); }   /* на скільки наступна заходить на попередню */
@@ -885,16 +875,12 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .hero__ctas { margin-top: 28px; gap: 12px; }
   .hero__ctas .btn { height: 60px; padding: 0 12px; font-size: clamp(14px, 4.4vw, 17px); }
   .link { height: 60px; padding: 0 24px; font-size: clamp(15px, 4.4vw, 17px); }   /* як кнопки hero */
-  .about__grid, .support__grid { grid-template-columns: 1fr; gap: 36px; }
+  .support__grid { grid-template-columns: 1fr; gap: 36px; }
   /* заголовок → лід → готова ілюстрація ланцюжка */
-  .about { padding: calc(var(--hdr) + 5vh) 0 calc(var(--orbs) + 4vw); --orbs: 104vw; }
-  .about__grid { gap: 28px; --t: calc((100vw - 2 * var(--pad)) / 5.5); }   /* «належить» — на всю ширину */
-  .about .lead { max-width: none; font-size: clamp(24px, 6.8vw, 30px); line-height: 1.18; }
-  /* кола — під текстом на всю ширину, той самий кластер: велике за правим краєм, середнє ліворуч, велике за низом */
-  .about__orbs { top: auto; left: 0; width: 100%; height: var(--orbs); }
-  .about__orb--a { --d: 68vw; --x: 80%; --y: 30%; }
-  .about__orb--b { --d: 40vw; --x: 26%; --y: 52%; }
-  .about__orb--c { --d: 64vw; --x: 70%; --y: 90%; }
+  .about { padding: 140px 0 96px; }
+  .about__text { line-height: 1.3; }
+  .facts { grid-template-columns: 1fr 1fr; row-gap: 40px; }
+  .fact b { font-size: 13vw; }
   .sec-head { margin-bottom: 44px; }
   .dirs__grid { gap: 48px 18px; }
   .pgrid { --gap: 16px; }
@@ -943,7 +929,7 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
   .hero { height: 100vh; height: 100svh; }
-  .hero__lens { display: none; }
+  .hero__lens, .hero__dome { display: none; }
 
   .ln { clip-path: none; }   /* рядки одразу на місці, маска не потрібна */
   :is(.btn, .link, .req__btn, .abtn, .hdr__burger):active { transform: none; }

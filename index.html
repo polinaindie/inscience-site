@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=34">
+  <link rel="stylesheet" href="styles.css?v=35">
   <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
   <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -51,7 +51,7 @@
 
 <!-- ============ 1. HERO ============ -->
 <section class="hero" id="top" data-theme="blue">
-  <!-- Картотека: hero закріплений, «Про нас» наїжджає на нього знизу, а hero трохи відступає вглиб -->
+  <!-- Hero закріплений на два екрани: знизу підіймається лаймовий пагорб і перефарбовує логотип у синій -->
   <div class="hero__sticky">
     <!-- Прихована наука: великі форми ілюстрацій тон-в-тон (svg поля й лупу з шарами ілюстрацій будує скрипт) -->
     <div class="hero__hidden" aria-hidden="true">
@@ -87,33 +87,26 @@
         </div>
       </div>
     </div>
+    <!-- лаймовий пагорб: копія логотипа в синьому, видна лише всередині дуги (копію й дугу робить main.js) -->
+    <div class="hero__dome" aria-hidden="true"></div>
   </div>
 </section>
 
 <!-- ============ 2. ПРО НАС ============ -->
-<section class="about" id="about" data-theme="field" style="--field:var(--green);--on:var(--paper)">
-  <div class="wrap about__grid">
-    <h2 class="h2 about__title reveal" data-ln>Наука <br class="br-m">належить<br><em class="about__acc">людям</em></h2>
-    <!-- лід проявляється словами за скролом: цілий текст для скрінрідера, розбиту на слова копію будує скрипт (aria-hidden) -->
-    <div class="about__body reveal">
-      <p class="lead about__lead" data-words>
-        INSCIENCE популяризує науку і доказову медицину та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо
-        українських вчених
-        та
-        лікарів/ок
-        видимими і розвиваємо
-        критичне мислення
-        через науковий підхід до пізнання світу.
-      </p>
-      <a href="#" class="link" data-ln><span class="link__t">Про INSCIENCE</span><span class="link__a" aria-hidden="true">→</span></a>
-    </div>
-  </div>
-  <!-- Три кола-патерни брендбуку скупчені праворуч і виходять за край; патерн інлайнить скрипт, рух (закочування,
-       обертання, відхід) — main.js -->
-  <div class="about__orbs" aria-hidden="true">
-    <span class="about__orb about__orb--a" data-pat="density"><span class="about__orb-i"></span></span>
-    <span class="about__orb about__orb--b" data-pat="flow"><span class="about__orb-i"></span></span>
-    <span class="about__orb about__orb--c" data-pat="intersection"><span class="about__orb-i"></span></span>
+<section class="about" id="about" data-theme="field" style="--field:var(--lime);--on:var(--ink);--off:#fff">
+  <div class="wrap about__in">
+    <h2 class="h2 about__title reveal" data-ln>Наука належить людям</h2>
+    <!-- текст проявляється словами за скролом: цілий текст для скрінрідера, розбиту на слова копію будує скрипт (aria-hidden);
+         маркер — фраза цілком -->
+    <p class="about__text" data-words>INSCIENCE популяризує <mark style="--bg:var(--pink);--fg:var(--ink)">науку і доказову медицину</mark> та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо <mark style="--bg:var(--purple);--fg:#fff">українських вчених та лікарів/ок</mark> видимими і розвиваємо <mark style="--bg:#fff;--fg:var(--blue)">критичне мислення</mark> через науковий підхід до пізнання світу.</p>
+    <p class="about__more reveal"><a href="#" class="btn btn--xl btn--blue" data-ln>Про INSCIENCE</a></p>
+    <!-- цифри докручуються, коли список у кадрі (main.js); підписи — нове мікрокопі, на погодження -->
+    <ul class="facts reveal">
+      <li class="fact"><b data-count="2018">2018</b><span data-ln>рік, коли ми почали робити науку видимою</span></li>
+      <li class="fact"><b data-count="4">4</b><span data-ln>напрямки роботи</span></li>
+      <li class="fact"><b data-count="6">6</b><span data-ln>проєктів для дітей, науковиць, бізнесу і здоровʼя</span></li>
+      <li class="fact"><b data-count="1500" data-suffix="+">1 500+</b><span data-ln>учасників INSCIENCE Conference</span></li>
+    </ul>
   </div>
 </section>
 
@@ -548,6 +541,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=34"></script>
+<script src="main.js?v=35"></script>
 </body>
 </html>
