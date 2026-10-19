@@ -395,21 +395,24 @@
   let heroLensScroll = () => {};   // лупа hero (розділ 11) згортається, коли сцену скролять
   // «Про нас» заходить на другий екран hero і заїжджає поверх закріпленого hero знизу
   if (!reduce) document.documentElement.classList.add('has-stack');
-  // той самий жест для «Про нас пишуть»: новини стоять, коли дійшли низом до краю екрана, лайм наїжджає поверх.
-  // CSS бере висоту новин (--wh, на скільки підняти sticky) і медіа (--mh, наїзд — не більше екрана)
-  const newsSec = $('#news'), newsWrap = $('.wrap', newsSec), mediaSec = $('#media');
-  const stackRO = new ResizeObserver(() => {
-    newsSec.style.setProperty('--wh', `${newsWrap.offsetHeight}px`);
-    newsSec.parentElement.style.setProperty('--mh', `${mediaSec.offsetHeight}px`);
-  });
-  [newsWrap, mediaSec].forEach(el => stackRO.observe(el));
-  // фокус з клавіатури в новинах, які вже під лаймом, — відкочуємо до моменту перед наїздом
-  newsSec.addEventListener('focusin', e => {
-    const m = mediaSec.getBoundingClientRect().top;
-    if (!reduce && m < innerHeight && e.target.getBoundingClientRect().bottom > m && e.target.matches(':focus-visible'))
-      scrollTo({ top: scrollY - (innerHeight - m) });
-  });
+  // той самий жест для «Про нас пишуть» над новинами й «Підтримати» над партнерами: попередня секція стоїть, коли
+  // дійшла низом до краю екрана, наступна наїжджає поверх. CSS бере висоту того, що стоїть (--wh, на скільки підняти
+  // sticky), і того, що наїжджає (--mh, наїзд — не більше екрана)
+  const newsSec = $('#news'), mediaSec = $('#media'), partnersSec = $('#partners');
   const support = $('.support');
+  [[newsSec, $('.wrap', newsSec), mediaSec], [partnersSec, $('.partners__pin'), support]].forEach(([under, pin, over]) => {
+    const ro = new ResizeObserver(() => {
+      under.style.setProperty('--wh', `${pin.offsetHeight}px`);
+      [under, over].forEach(s => s.style.setProperty('--mh', `${over.offsetHeight}px`));
+    });
+    [pin, over].forEach(el => ro.observe(el));
+    // фокус з клавіатури в секції, яка вже під наступною, — відкочуємо до моменту перед наїздом
+    under.addEventListener('focusin', e => {
+      const m = over.getBoundingClientRect().top;
+      if (!reduce && !over.hidden && m < innerHeight && e.target.getBoundingClientRect().bottom > m && e.target.matches(':focus-visible'))
+        scrollTo({ top: scrollY - (innerHeight - m) });
+    });
+  });
   const supportInner = $('.support__inner');
   const supportBg = $('.support__bg');
   let lastSp = -1, supportIn = false, supportTop = Infinity;   // supportTop — верх синього кола у вʼюпорті
@@ -471,6 +474,7 @@
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
         if (s === newsSec && !mediaSec.hidden && mediaSec.getBoundingClientRect().top <= y) continue;   // лайм уже наїхав під шапку
+        if (s === partnersSec && sr.top <= y) continue;   // «Підтримати» вже наїхала під шапку
         if (s === hero) {
           if (about.getBoundingClientRect().top <= y) continue;   // «Про нас» уже наїхала під шапку
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
@@ -1070,20 +1074,13 @@
     if (inside) $('.hdr__logo').focus();   // бургер сховано — фокус на початок шапки
   });
 
-  /* ---------- 13. Стрічка партнерів: кнопка паузи; поза кадром і на прихованій вкладці стоїть (hover і фокус — у CSS) ---------- */
+  /* ---------- 13. Стрічка партнерів: поза кадром і на прихованій вкладці стоїть (hover і фокус — у CSS) ---------- */
   const marquee = $('.marquee');
-  const mToggle = $('.marquee__toggle');
   // поява по одному: копія списку (для безшовної стрічки) — з тими самими кроками, тож стрічка рушає, щойно вийшло останнє лого
   const mItems = $$('.marquee__list', marquee).map(l => $$('li', l));
   mItems.forEach(list => list.forEach((li, i) => li.style.setProperty('--i', i)));
   marquee.style.setProperty('--run', `${800 + (mItems[0].length - 1) * 70}ms`);
-  if (reduce) mToggle.closest('.partners__foot').hidden = true;   // статичний грід — пауза не потрібна
-  else {
-    mToggle.addEventListener('click', () => {
-      const paused = mToggle.getAttribute('aria-pressed') !== 'true';
-      mToggle.setAttribute('aria-pressed', paused);
-      marquee.classList.toggle('is-paused', paused);
-    });
+  if (!reduce) {   // reduced motion — статичний грід, стрічка не рухається
     let mSeen = false;
     const mSync = () => marquee.classList.toggle('is-off', !mSeen || document.hidden);
     new IntersectionObserver(([e]) => { mSeen = e.isIntersecting; mSync(); }).observe(marquee);
@@ -1091,61 +1088,50 @@
     mSync();
   }
 
-  /* ---------- 14. Новини: слайдер (нативний скрол зі snap), кнопки, перетягування мишею ---------- */
-  const track = $('.ntrack');
-  const newsBtns = $$('.news__btn');
-  const newsCards = $$('.newscard', track);
-  const newsNum = $('.news__count b');
-  $('.news__count span').textContent = pad2(newsCards.length);
-  const stepW = () => newsCards[1] ? newsCards[1].offsetLeft - newsCards[0].offsetLeft : track.clientWidth;
-  // краї вимикають стрілки; номер — перша картка в кадрі
-  const newsEdges = () => {
-    const max = track.scrollWidth - track.clientWidth;
-    newsBtns[0].disabled = track.scrollLeft <= 2;
-    newsBtns[1].disabled = track.scrollLeft >= max - 2;
-    newsNum.textContent = pad2(Math.round(track.scrollLeft / stepW()) + 1);
+  /* ---------- 14. Слайдери новин і «Про нас пишуть»: нативний скрол зі snap, стрілки, лічильник, перетягування мишею ---------- */
+  const slider = sec => {
+    const track = $('.track', sec), btns = $$('.tfoot .abtn', sec), items = [...track.children], num = $('.tfoot__count b', sec);
+    $('.tfoot__count span', sec).textContent = pad2(items.length);
+    const stepW = () => items[1] ? items[1].offsetLeft - items[0].offsetLeft : track.clientWidth;
+    // краї вимикають стрілки; номер — перша картка в кадрі
+    const edges = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      btns[0].disabled = track.scrollLeft <= 2;
+      btns[1].disabled = track.scrollLeft >= max - 2;
+      num.textContent = pad2(Math.round(track.scrollLeft / stepW()) + 1);
+    };
+    btns.forEach(b => b.addEventListener('click', () => {
+      track.scrollBy({ left: +b.dataset.step * stepW(), behavior: reduce ? 'auto' : 'smooth' });
+    }));
+    // Мишею трек можна тягнути; після перетягування клік по картці не спрацьовує
+    let drag = null, dragged = false;
+    track.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'mouse' || e.button) return;
+      drag = { x: e.clientX, left: track.scrollLeft }; dragged = false;
+    });
+    track.addEventListener('dragstart', e => e.preventDefault());   // посилання й лого не тягнуться як файли
+    addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = e.clientX - drag.x;
+      if (!dragged && Math.abs(dx) > 5) { dragged = true; track.classList.add('is-drag'); }
+      if (dragged) track.scrollLeft = drag.left - dx;
+    });
+    addEventListener('pointerup', () => {
+      if (!drag) return;
+      drag = null;
+      if (!dragged) return;
+      // доводимо до найближчої картки (snap на час перетягування вимкнено)
+      const left = track.scrollLeft, w = stepW();
+      track.classList.remove('is-drag');
+      track.scrollLeft = left;
+      track.scrollTo({ left: Math.round(left / w) * w, behavior: reduce ? 'auto' : 'smooth' });
+    });
+    track.addEventListener('click', e => { if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; } }, true);
+    track.addEventListener('scroll', edges, { passive: true });
+    addEventListener('resize', edges);
+    edges();
   };
-  newsBtns.forEach(b => b.addEventListener('click', () => {
-    track.scrollBy({ left: +b.dataset.step * stepW(), behavior: reduce ? 'auto' : 'smooth' });
-  }));
-  // Мишею трек можна тягнути; після перетягування клік по картці не спрацьовує
-  let drag = null, dragged = false;
-  track.addEventListener('pointerdown', e => {
-    if (e.pointerType !== 'mouse' || e.button) return;
-    drag = { x: e.clientX, left: track.scrollLeft }; dragged = false;
-  });
-  addEventListener('pointermove', e => {
-    if (!drag) return;
-    const dx = e.clientX - drag.x;
-    if (!dragged && Math.abs(dx) > 5) { dragged = true; track.classList.add('is-drag'); }
-    if (dragged) track.scrollLeft = drag.left - dx;
-  });
-  addEventListener('pointerup', () => {
-    if (!drag) return;
-    drag = null;
-    if (!dragged) return;
-    // доводимо до найближчої картки (snap на час перетягування вимкнено)
-    const left = track.scrollLeft, w = stepW();
-    track.classList.remove('is-drag');
-    track.scrollLeft = left;
-    track.scrollTo({ left: Math.round(left / w) * w, behavior: reduce ? 'auto' : 'smooth' });
-  });
-  track.addEventListener('click', e => { if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; } }, true);
-  // На тачі фото стягується до фігури в картці, найближчій до центру треку, — коли трек у кадрі
-  const touch = !matchMedia('(hover: hover)').matches;
-  let trackSeen = false;
-  const cutNearest = () => {
-    if (!touch) return;
-    const r = track.getBoundingClientRect(), mid = r.left + r.width / 2;
-    let best = null, bd = Infinity;
-    newsCards.forEach(c => { const cr = c.getBoundingClientRect(), d = Math.abs(cr.left + cr.width / 2 - mid); if (d < bd) { bd = d; best = c; } });
-    newsCards.forEach(c => c.classList.toggle('is-cut', trackSeen && c === best));
-  };
-  if (touch) new IntersectionObserver(([e]) => { trackSeen = e.isIntersecting; cutNearest(); }, { rootMargin: '-25% 0px -25% 0px' }).observe(track);
-  let nt = 0;
-  track.addEventListener('scroll', () => { newsEdges(); clearTimeout(nt); nt = setTimeout(cutNearest, 80); }, { passive: true });
-  addEventListener('resize', newsEdges);
-  newsEdges();
+  [newsSec, mediaSec].filter(s => !s.hidden).forEach(slider);
 
   /* ---------- 15. Ховер кнопок: коло заливки росте від точки входу курсора й стягується в точку виходу ---------- */
   const fillXY = (el, e) => {
