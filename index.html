@@ -310,13 +310,13 @@
 <!-- ============ 6. НОВИНИ ============ -->
 <section class="news" id="news" data-theme="light">
   <div class="wrap">
-    <div class="sec-head sec-head--line">
+    <div class="sec-head">
       <h2 class="h2 reveal" data-ln>Що нового</h2>
     </div>
 
-    <div class="ntrack reveal" id="news-track" role="region" aria-label="Новини" tabindex="0">
-      <article class="newscard" style="--i:0;--nc:var(--green);--mask:url(assets/icons/clover.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n1.jpg" alt="" loading="lazy" draggable="false"></div></div>
+    <div class="track reveal" id="news-track" role="region" aria-label="Новини" tabindex="0">
+      <article class="newscard" style="--i:0">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n1.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-10-14">14.10.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Олена Скирта та Анна Орєхова перейшли у наглядову раду INSCIENCE</a></h3>
@@ -324,8 +324,8 @@
         </div>
       </article>
       <!-- Мок-контент: замінити реальною новиною -->
-      <article class="newscard" style="--i:1;--nc:var(--lime);--mask:url(assets/icons/flower.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n2.jpg" alt="" loading="lazy" draggable="false"></div></div>
+      <article class="newscard" style="--i:1">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n2.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-10-02">02.10.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Відкрили реєстрацію на INSCIENCE Conference 2026</a></h3>
@@ -333,8 +333,8 @@
         </div>
       </article>
       <!-- Мок-контент: замінити реальною новиною -->
-      <article class="newscard" style="--i:2;--nc:var(--maroon);--mask:url(assets/icons/star.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n3.jpg" alt="" loading="lazy" draggable="false"></div></div>
+      <article class="newscard" style="--i:2">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n3.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-09-24">24.09.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Women Led Science: оголошуємо 12 учасниць нового сезону</a></h3>
@@ -342,8 +342,8 @@
         </div>
       </article>
       <!-- Мок-контент: замінити реальною новиною -->
-      <article class="newscard" style="--i:3;--nc:var(--purple);--mask:url(assets/icons/heart.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n4.jpg" alt="" loading="lazy" draggable="false"></div></div>
+      <article class="newscard" style="--i:3">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n4.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-09-11">11.09.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Science Kids повертається до шкіл</a></h3>
@@ -351,8 +351,8 @@
         </div>
       </article>
       <!-- Мок-контент: замінити реальною новиною -->
-      <article class="newscard" style="--i:4;--nc:var(--brown);--mask:url(assets/icons/drop.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n5.jpg" alt="" loading="lazy" draggable="false"></div></div>
+      <article class="newscard" style="--i:4">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n5.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-08-28">28.08.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">«Бережи себе» запускає подкаст про здоровʼя без міфів</a></h3>
@@ -360,8 +360,8 @@
         </div>
       </article>
       <!-- Мок-контент: замінити реальною новиною -->
-      <article class="newscard" style="--i:5;--nc:var(--hotpink);--mask:url(assets/icons/burst.svg)">
-        <div class="newscard__media pop"><div class="newscard__cut"><img class="newscard__photo" src="assets/photos/news/n6.jpg" alt="" loading="lazy" draggable="false"></div></div>
+      <article class="newscard" style="--i:5">
+        <div class="newscard__media pop"><img class="newscard__photo" src="assets/photos/news/n6.jpg" alt="" loading="lazy" draggable="false"></div>
         <div class="newscard__body pop">
           <time class="newscard__date" datetime="2026-08-15">15.08.2026</time>
           <h3 class="newscard__title"><a class="newscard__link" href="#">Нові осередки здоровʼя відкрилися в Харкові та Дніпрі</a></h3>
@@ -373,9 +373,9 @@
       <a href="#" class="link"><span class="link__t">Усі новини</span><span class="link__a" aria-hidden="true">→</span></a>
       <div class="tfoot__nav">
         <!-- aria-label кнопок — UI-мікрокопі, потрібне погодження -->
-        <button class="abtn news__btn" type="button" data-step="-1" aria-controls="news-track" aria-label="Попередні новини" style="--c:var(--pink)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-molecule"/></svg><span aria-hidden="true">←</span></button>
-        <span class="tfoot__count news__count" aria-hidden="true"><b>01</b> / <span>06</span></span>
-        <button class="abtn news__btn" type="button" data-step="1" aria-controls="news-track" aria-label="Наступні новини" style="--c:var(--lime)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-planet"/></svg><span aria-hidden="true">→</span></button>
+        <button class="abtn" type="button" data-step="-1" aria-controls="news-track" aria-label="Попередні новини" style="--c:var(--pink)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-molecule"/></svg><span aria-hidden="true">←</span></button>
+        <span class="tfoot__count" aria-hidden="true"><b>01</b> / <span>06</span></span>
+        <button class="abtn" type="button" data-step="1" aria-controls="news-track" aria-label="Наступні новини" style="--c:var(--lime)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-planet"/></svg><span aria-hidden="true">→</span></button>
       </div>
     </div>
   </div>
@@ -386,85 +386,90 @@
 <section class="media" id="media" data-theme="field" style="--field:var(--lime);--on:var(--ink);--off:#fff">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal" data-ln>Про нас <br class="br-m">пишуть</h2>
+      <h2 class="h2 reveal" id="media-title" data-ln>Про нас <br class="br-m">пишуть</h2>
     </div>
     <!-- «нова вкладка» (sr-only) — UI-мікрокопі, потрібне погодження -->
-    <ul class="mgrid reveal">
-      <li class="pop"><a class="mcard" href="https://www.pravda.com.ua/" target="_blank" rel="noopener">
+    <ul class="track track--media reveal" id="media-track" aria-labelledby="media-title" tabindex="0">
+      <li><a class="mcard pop" href="https://www.pravda.com.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/up.svg" alt="Українська правда" style="--h:26px" draggable="false"></span>
         <span class="mcard__text">Пʼята INSCIENCE Conference: 1 500+ учасників і 60+ стартапів у Києві</span>
         <span class="mcard__meta"><span>Червень 2026</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li class="pop"><a class="mcard" href="https://forbes.ua/" target="_blank" rel="noopener">
+      <li><a class="mcard pop" href="https://forbes.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/forbes.svg" alt="Forbes Україна" style="--h:40px" draggable="false"></span>
         <span class="mcard__text">INSCIENCE Business: як науковці й бізнес разом створюють наукоємні технології</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li class="pop"><a class="mcard" href="https://suspilne.media/" target="_blank" rel="noopener">
+      <li><a class="mcard pop" href="https://suspilne.media/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/suspilne.svg" alt="Суспільне" style="--h:40px" draggable="false"></span>
         <span class="mcard__text">Science Kids: STEAM-події для дітей у Харкові, Миколаєві, Запоріжжі, Херсоні та Одесі</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li class="pop"><a class="mcard" href="https://nv.ua/" target="_blank" rel="noopener">
+      <li><a class="mcard pop" href="https://nv.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img class="is-tone" src="assets/logos/media/nv.svg" alt="NV" style="--h:56px" draggable="false"></span>
         <span class="mcard__text">Women Led Science: до $10 000 на дослідження для команд під керівництвом жінок</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li class="pop"><a class="mcard" href="https://hromadske.ua/" target="_blank" rel="noopener">
+      <li><a class="mcard pop" href="https://hromadske.ua/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img class="is-tone" src="assets/logos/media/hromadske.svg" alt="Громадське" style="--h:52px" draggable="false"></span>
         <span class="mcard__text">Осередки здоровʼя: безоплатні зустрічі з лікарями у прифронтових містах</span>
         <span class="mcard__meta"><span>2025</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
-      <li class="pop"><a class="mcard" href="https://kyivindependent.com/" target="_blank" rel="noopener">
+      <li><a class="mcard pop" href="https://kyivindependent.com/" target="_blank" rel="noopener">
         <span class="mcard__logo"><img src="assets/logos/media/kyivindependent.svg" alt="The Kyiv Independent" style="--h:34px" draggable="false"></span>
         <span class="mcard__text">Як INSCIENCE робить українських вчених і лікарів видимими</span>
         <span class="mcard__meta"><span>2026</span><span class="mcard__arr" aria-hidden="true">↗</span></span>
         <span class="sr-only"> (нова вкладка)</span>
       </a></li>
     </ul>
+    <div class="tfoot">
+      <div class="tfoot__nav">
+        <!-- aria-label кнопок — UI-мікрокопі, потрібне погодження -->
+        <button class="abtn" type="button" data-step="-1" aria-controls="media-track" aria-label="Попередні матеріали" style="--c:var(--pink)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-burst"/></svg><span aria-hidden="true">←</span></button>
+        <span class="tfoot__count" aria-hidden="true"><b>01</b> / <span>06</span></span>
+        <button class="abtn" type="button" data-step="1" aria-controls="media-track" aria-label="Наступні матеріали" style="--c:var(--paper)"><svg class="abtn__shape" aria-hidden="true"><use href="#i-clover"/></svg><span aria-hidden="true">→</span></button>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ============ 8. ПАРТНЕРИ ============ -->
 <!-- Заглушки: реальні логотипи організацій, не підтверджені партнери INSCIENCE -->
 <section class="partners" id="partners" data-theme="light">
-  <div class="wrap">
-    <div class="sec-head">
-      <h2 class="h2 reveal" data-ln>Разом <br class="br-m">з нами</h2>
+  <!-- стоїть (sticky), поки «Підтримати» наїжджає поверх -->
+  <div class="partners__pin">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2 class="h2 reveal" data-ln>Разом <br class="br-m">з нами</h2>
+      </div>
     </div>
-  </div>
-  <div class="marquee reveal" role="region" aria-label="Партнери" tabindex="0">
-    <div class="marquee__track">
-      <ul class="marquee__list">
-        <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="МОН України" style="--h:78px" draggable="false"></li>
-        <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="МОЗ України" style="--h:62px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/google.svg" alt="Google" style="--h:40px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="UNICEF" style="--h:38px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="British Council" style="--h:50px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="Київстар" style="--h:36px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="CEDOS" style="--h:58px" draggable="false"></li>
-      </ul>
-      <ul class="marquee__list" aria-hidden="true" inert>
-        <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="" style="--h:78px" draggable="false"></li>
-        <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="" style="--h:62px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/google.svg" alt="" style="--h:40px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="" style="--h:38px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="" style="--h:50px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="" style="--h:36px" draggable="false"></li>
-        <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="" style="--h:58px" draggable="false"></li>
-      </ul>
+    <div class="marquee reveal" role="region" aria-label="Партнери" tabindex="0">
+      <div class="marquee__track">
+        <ul class="marquee__list">
+          <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="МОН України" style="--h:78px" draggable="false"></li>
+          <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="МОЗ України" style="--h:62px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/google.svg" alt="Google" style="--h:40px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="UNICEF" style="--h:38px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="British Council" style="--h:50px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="Київстар" style="--h:36px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="CEDOS" style="--h:58px" draggable="false"></li>
+        </ul>
+        <ul class="marquee__list" aria-hidden="true" inert>
+          <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="" style="--h:78px" draggable="false"></li>
+          <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="" style="--h:62px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/google.svg" alt="" style="--h:40px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="" style="--h:38px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="" style="--h:50px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="" style="--h:36px" draggable="false"></li>
+          <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="" style="--h:58px" draggable="false"></li>
+        </ul>
+      </div>
     </div>
-  </div>
-  <div class="wrap tfoot partners__foot">
-    <!-- aria-label — UI-мікрокопі, потрібне погодження -->
-    <button class="abtn marquee__toggle" type="button" aria-pressed="false" aria-label="Зупинити стрічку партнерів" style="--c:var(--lime)">
-      <svg class="abtn__shape" aria-hidden="true"><use href="#i-clover"/></svg><span class="marquee__icon" aria-hidden="true"></span>
-    </button>
   </div>
 </section>
 

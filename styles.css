@@ -374,7 +374,6 @@ main:focus { outline: none; }
    section head
    ========================================================== */
 .sec-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 48px; margin-bottom: 72px; flex-wrap: wrap; }
-.sec-head--line { padding-bottom: 32px; border-bottom: 1px solid currentColor; margin-bottom: 0; }   /* «підлога», як лінія купи у футері */
 
 /* ==========================================================
    Поява — одна мова на весь сайт (.reveal отримує .in, коли в кадрі)
@@ -458,7 +457,7 @@ main:focus { outline: none; }
   --cw: calc(min(100vw, var(--max)) - 2 * var(--pad));   /* на всю ширину контенту, як .wrap */
   --gap: 28px;
 }
-/* Під треком — один патерн для колоди, новин і стрічки партнерів: лінк ліворуч, ← 01 / 08 → праворуч */
+/* Під треком — один патерн для колоди, новин і «Про нас пишуть»: лінк ліворуч, ← 01 / 08 → праворуч */
 .tfoot { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 28px; }
 .tfoot__nav { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .tfoot__count { font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -593,57 +592,65 @@ main:focus { outline: none; }
    6. НОВИНИ — слайдер
    ========================================================== */
 .news { padding: 16vh 0 14vh; }
-/* «Про нас пишуть» наїжджає на новини, як «Про нас» на hero: новини дійшли низом до краю екрана й стоять (sticky),
-   лайм заходить поверх на свою висоту, але не більше екрана (--wh / --mh міряє скрипт). Без медіа — звичайний стик */
-.has-stack :is(.news, .media) { --o: min(100vh, var(--mh, 100vh)); --o: min(100svh, var(--mh, 100svh)); }   /* на скільки лайм заходить на новини */
+/* Наїзд — той самий жест, що «Про нас» на hero: попередня секція дійшла низом до краю екрана й стоїть (sticky),
+   наступна заходить поверх на свою висоту, але не більше екрана. Пари: новини → «Про нас пишуть», партнери → «Підтримати»
+   (див. розділ 8). Висоту того, що стоїть (--wh), і того, що наїжджає (--mh), міряє скрипт. Без медіа — звичайний стик */
+.has-stack :is(.news, .media, .partners, .support) { --o: min(100vh, var(--mh, 100vh)); --o: min(100svh, var(--mh, 100svh)); }   /* на скільки наступна заходить на попередню */
 .has-stack .news:has(+ .media:not([hidden])) { padding-bottom: 0; }
 .has-stack .news:has(+ .media:not([hidden])) > .wrap { position: sticky; top: calc(100vh - var(--wh, 100vh)); top: calc(100svh - var(--wh, 100svh)); padding-bottom: 14vh; }
 .has-stack .news:has(+ .media:not([hidden]))::after { content: ""; display: block; height: var(--o); }
 .has-stack .news + .media { position: relative; z-index: 1; margin-top: calc(-1 * var(--o)); }
-/* стрілки й лічильник — під треком (.tfoot), ті самі .abtn, що й у колоді */
 
-/* трек: нативний горизонтальний скрол зі snap; мишею можна тягнути */
-.ntrack {
+/* Слайдер — один для новин і «Про нас пишуть»: нативний горизонтальний скрол зі snap, мишею можна тягнути;
+   стрілки й лічильник — під треком (.tfoot), ті самі .abtn, що й у колоді */
+.track {
   display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 2 * 24px) / 3); gap: 24px;
   overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none;
-  padding: 48px 8px 12px; margin: 0 -8px; scroll-padding-inline: 8px;
+  padding: 10px; margin: -10px -10px 0; scroll-padding-inline: 10px;   /* запас під підйом картки й кільце фокусу */
 }
-.ntrack::-webkit-scrollbar { display: none; }
-.ntrack:focus-visible { outline-offset: -2px; --ring: var(--ink); }
-.ntrack.is-drag { scroll-snap-type: none; cursor: grabbing; }
-.ntrack.is-drag * { pointer-events: none; }
-@media (hover: hover) and (pointer: fine) { .ntrack { cursor: grab; } }
-.newscard { position: relative; display: flex; flex-direction: column; gap: 26px; border-radius: 28px; scroll-snap-align: start; user-select: none; -webkit-user-select: none; }
-/* під фото — кольоровий прямокутник 3:2 (колір форми з брендбуку); на hover/focus фото стягується до фігури,
-   і навколо проступає колір. Маска вписана по висоті (auto 84%): фігура ціла, колір видно з боків */
-.newscard__media { position: relative; aspect-ratio: 3 / 2; width: 100%; border-radius: 28px; overflow: hidden; background: var(--nc); }
-.newscard__cut {
-  position: absolute; inset: -1px;
-  -webkit-mask: var(--mask) center / auto 900% no-repeat; mask: var(--mask) center / auto 900% no-repeat;
-  transition: -webkit-mask-size .7s var(--ease), mask-size .7s var(--ease);
+.track > * { scroll-snap-align: start; }
+.track::-webkit-scrollbar { display: none; }
+.track:focus-visible { outline-offset: -2px; --ring: var(--ink); }
+.track.is-drag { scroll-snap-type: none; cursor: grabbing; }
+.track.is-drag * { pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .track { cursor: grab; } }
+
+/* Картка новини — тонкий контур (1px, радіус 28): фото на всю ширину зверху, під ним дата → заголовок → опис.
+   Hover / фокус — спокійно: контур темнішає до чорнила, картка ледь піднімається */
+.newscard { position: relative; display: flex; flex-direction: column; border-radius: 28px; user-select: none; -webkit-user-select: none; transition: translate .45s var(--ease); }
+/* контур — окремим шаром: зʼявляється разом із фото й текстом (як .pop); саму картку (елемент snap) не масштабуємо */
+.newscard::before {
+  content: ""; position: absolute; inset: 0; z-index: 1; border: 1px solid rgba(11, 11, 12, .28); border-radius: inherit;
+  pointer-events: none; transition: border-color .35s var(--ease);
 }
-.newscard__photo { width: 100%; height: 100%; object-fit: cover; transition: scale .9s var(--ease); }
-.newscard:is(:focus-within, .is-cut) .newscard__cut { -webkit-mask-size: auto 84%; mask-size: auto 84%; }
-.newscard:is(:focus-within, .is-cut) .newscard__photo { scale: 1.08; }
+.js .track:not(.in) .newscard::before { opacity: 0; }
+.track.in .newscard::before { animation: ftr-shape-in 1.1s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+.track.is-instant .newscard::before { animation: none; }
+.newscard:focus-within { translate: 0 -4px; }
+.newscard:focus-within::before { border-color: var(--ink); }
 @media (hover: hover) {
-  .newscard:hover .newscard__cut { -webkit-mask-size: auto 84%; mask-size: auto 84%; }
-  .newscard:hover .newscard__photo { scale: 1.08; }
+  .newscard:hover { translate: 0 -4px; }
+  .newscard:hover::before { border-color: var(--ink); }
 }
-.newscard__body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; gap: 16px; }
-.newscard .newscard__date { opacity: .82; font-variant-numeric: tabular-nums; }
-/* заголовок новини — це речення, а не гасло: Fixel, звичайний регістр, щоб довгий текст читався */
-.newscard__title { font-family: var(--f-ui); font-weight: 600; font-size: clamp(20px, 1.6vw, 24px); line-height: 1.25; }
+.newscard__media { aspect-ratio: 3 / 2; border-radius: 28px 28px 0 0; overflow: hidden; }
+.newscard__photo { width: 100%; height: 100%; object-fit: cover; }
+.newscard__body { display: flex; flex: 1; flex-direction: column; align-items: flex-start; padding: 24px 28px 32px; }
+.newscard .newscard__date { font-variant-numeric: tabular-nums; opacity: .82; }
+/* заголовок новини — це речення, а не гасло: Fixel, звичайний регістр, повний контраст */
+.newscard__title { margin-top: 14px; font-family: var(--f-ui); font-weight: 600; font-size: clamp(20px, 1.5vw, 24px); line-height: 1.22; letter-spacing: -.01em; text-wrap: pretty; }
 .newscard__link { text-decoration: none; }
-.newscard__link::after { content: ""; position: absolute; inset: 0; border-radius: 28px; }
+.newscard__link::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: 28px; }
 .newscard__link:focus-visible { outline: none; }
-.newscard:has(.newscard__link:focus-visible) { outline: 2px solid var(--ink); outline-offset: 6px; }
-.newscard p { font-weight: 400; font-size: 17px; line-height: 1.5; }
+.newscard:has(.newscard__link:focus-visible) { outline: 2px solid var(--ink); outline-offset: 4px; }
+/* опис — другорядний: 78% чорнила на папері (≈ 9.5:1, вище за AA), рядок ~50 знаків */
+.newscard p { margin-top: 12px; max-width: 34em; font-weight: 400; font-size: 17px; line-height: 1.5; color: rgba(11, 11, 12, .78); text-wrap: pretty; }
 
 /* ==========================================================
-   7. МЕДІА — лаймове поле, картки-посилання на матеріали
+   7. МЕДІА — лаймове поле, слайдер карток-посилань на матеріали
    ========================================================== */
 .media { padding: 14vh 0 16vh; background: var(--field); color: var(--on); }
-.mgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+/* трек — той самий .track, що в новинах (3 / 2 / ~84% у кадрі); картки однієї висоти */
+.track--media > li { display: grid; }
 .mcard {
   display: flex; flex-direction: column; gap: 22px; height: 100%; min-height: 270px; padding: 28px 28px 24px;
   border-radius: 28px; background: var(--paper); color: var(--ink); text-decoration: none;
@@ -670,48 +677,39 @@ main:focus { outline: none; }
 /* ==========================================================
    8. ПАРТНЕРИ — тікер логотипів
    ========================================================== */
-.partners { padding: 14vh 0 20vh; }
+.partners { padding: 14vh 0 18vh; }
 .partners .sec-head { margin-bottom: 56px; }
-.marquee { overflow: hidden; border-block: 1px solid var(--line); --band: 160px; }   /* --band — висота смуги */
+/* «Підтримати» наїжджає на партнерів тим самим жестом, що лайм на новини (див. розділ 6): партнери — екран, як hero,
+   заголовок і стрічка посередині; вони стоять, синє коло «Підтримати» заходить поверх. Reduced motion — звичайний стик */
+.has-stack .partners { padding: 0; }
+.has-stack .partners__pin {
+  position: sticky; top: calc(100vh - var(--wh, 100vh)); top: calc(100svh - var(--wh, 100svh));
+  min-height: 100vh; min-height: 100svh; padding: calc(var(--hdr) + 4vh) 0 6vh;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.partners__pin > .wrap { width: 100%; }
+.has-stack .partners::after { content: ""; display: block; height: var(--o); }
+.has-stack .partners + .support { z-index: 1; margin-top: calc(-1 * var(--o)); }
+/* лого великі (×1.7 від базової висоти --h), між ними — лише повітря: дрібних форм-роздільників немає */
+.marquee { overflow: hidden; border-block: 1px solid var(--line); --band: 230px; }   /* --band — висота смуги */
 .marquee:focus-visible { outline-offset: -4px; --ring: var(--ink); }
-.marquee__track { display: flex; width: max-content; animation: marquee 46s linear infinite; }
-/* пауза: кнопка (.is-paused), фокус, hover; поза кадром і на прихованій вкладці (.is-off) */
-.marquee:focus-within .marquee__track, .marquee:is(.is-paused, .is-off) .marquee__track { animation-play-state: paused; }
+.marquee__track { display: flex; width: max-content; animation: marquee 62s linear infinite; }
+/* стоїть: на hover і фокусі (з клавіатури стрічку зупиняє фокус — WCAG 2.2.2); поза кадром і на прихованій вкладці (.is-off) */
+.marquee:focus-within .marquee__track, .marquee.is-off .marquee__track { animation-play-state: paused; }
 @media (hover: hover) { .marquee:hover .marquee__track { animation-play-state: paused; } }
 .marquee__list { display: flex; }
-.marquee__list li { display: flex; align-items: center; height: var(--band); }
-.plogo { height: var(--h); width: auto; filter: brightness(0); mix-blend-mode: multiply; opacity: .82;
+.marquee__list li { display: flex; align-items: center; height: var(--band); padding-inline: clamp(44px, 4.4vw, 84px); }
+.plogo { height: calc(var(--h) * 1.7); width: auto; filter: brightness(0); mix-blend-mode: multiply; opacity: .82;
   transition: filter .4s var(--ease), opacity .4s, translate .8s var(--ease-out) calc(var(--i, 0) * 70ms); }
 @media (hover: hover) { .marquee__list li:hover .plogo { filter: none; opacity: 1; } }
-/* між логотипами — маленькі форми напрямків у їхніх кольорах */
-.marquee__list li::after {
-  content: ""; flex: none; width: 26px; height: 26px; margin-inline: 64px; background: var(--sc);
-  -webkit-mask: var(--si) center / contain no-repeat; mask: var(--si) center / contain no-repeat;
-}
-.marquee__list li:nth-child(4n+1) { --sc: var(--blue);   --si: url(assets/icons/eye.svg); }
-.marquee__list li:nth-child(4n+2) { --sc: var(--lime);   --si: url(assets/icons/flower.svg); }
-.marquee__list li:nth-child(4n+3) { --sc: var(--pink);   --si: url(assets/icons/arrows.svg); }
-.marquee__list li:nth-child(4n+4) { --sc: var(--purple); --si: url(assets/icons/heart.svg); }
 @keyframes marquee { to { transform: translateX(-50%); } }
-/* поява: лого по одному виходять з маски смуги (з-під нижньої лінії), крок 70 мс, крива футера; форми між ними —
-   як у футері; стрічка рушає, коли вийшло останнє (--run ставить скрипт; пауза тримає і цю затримку) */
+/* поява: лого по одному виходять з маски смуги (з-під нижньої лінії), крок 70 мс, крива футера;
+   стрічка рушає, коли вийшло останнє (--run ставить скрипт) */
 .js .marquee:not(.in) .plogo { translate: 0 calc(50% + var(--band) / 2); }
-.js .marquee:not(.in) li::after { opacity: 0; }
-.marquee.in li::after { animation: ftr-shape-in 1.1s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
 .js .marquee:not(.in) .marquee__track { animation-play-state: paused; }
 .marquee.in .marquee__track { animation-delay: var(--run, 0s); }
 .marquee.is-instant .plogo { transition-property: filter, opacity; }
-.marquee.is-instant li::after { animation: none; }
 .marquee.is-instant .marquee__track { animation-delay: 0s; }
-/* кнопка паузи — іконкова, як стрілки колоди: за нею розквітає форма; ❚❚ ↔ ▶ за aria-pressed */
-.partners__foot { justify-content: flex-end; margin-top: 20px; }
-.marquee__toggle { --step: 0; }
-.marquee__icon { width: 14px; height: 16px; }
-.marquee__icon::before, .marquee__icon::after { content: ""; position: absolute; top: 0; bottom: 0; width: 4px; background: currentColor; }
-.marquee__icon::before { left: 1px; }
-.marquee__icon::after { right: 1px; }
-.marquee__toggle[aria-pressed="true"] .marquee__icon::before { left: 1px; width: 13px; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.marquee__toggle[aria-pressed="true"] .marquee__icon::after { display: none; }
 
 /* ==========================================================
    9. ЯК ПІДТРИМАТИ — повернення до синього
@@ -806,8 +804,7 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .hero__intro p { font-size: clamp(17px, 2vw, 22px); max-width: none; }
   .hero__ctas { display: grid; margin-top: 2vw; gap: 10px; }
   .hero__ctas .btn { height: clamp(52px, 6vw, 72px); padding: 0 12px; font-size: clamp(15px, 1.75vw, 19px); }
-  .ntrack { grid-auto-columns: calc((100% - 24px) / 2); }
-  .mgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .track { grid-auto-columns: calc((100% - 24px) / 2); }
   .ftr__shapes { aspect-ratio: 722 / 455; }
 }
 @media (max-width: 760px) {
@@ -840,8 +837,9 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .pcard__title { font-size: 34px; }
   .pcard__stats dt { font-size: 32px; }
   .pcard__stats { grid-template-columns: repeat(2, auto); column-gap: 32px; }
-  .ntrack { grid-auto-columns: 84%; gap: 16px; padding-top: 32px; }
-  .mgrid { grid-template-columns: 1fr; gap: 14px; }
+  .track { grid-auto-columns: 84%; gap: 16px; }
+  .newscard__body { padding: 20px 22px 26px; }
+  .newscard p { font-size: 16px; }
   .mcard { min-height: 0; padding: 24px; }
   .dir__name { font-size: 19px; hyphens: auto; }
   .req__row { grid-template-columns: 1fr auto; gap: 6px 16px; }
@@ -853,9 +851,9 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .ftr__group { grid-template-columns: 1fr; gap: 14px; }
   .ftr__group ul { grid-template-columns: 1fr 1fr; gap: 12px 24px; }
   .ftr__socket { justify-content: flex-start; gap: 12px 28px; }
-  .marquee { --band: 112px; }
-  .plogo { height: calc(var(--h) * .72); }
-  .marquee__list li::after { width: 22px; height: 22px; margin-inline: 32px; }
+  .marquee { --band: 150px; }
+  .marquee__list li { padding-inline: 30px; }
+  .plogo { height: calc(var(--h) * 1.1); }   /* ×1.5 від колишніх .72 */
 }
 /* Напрямки на мобільному: рядки — диск ліворуч, назва й кількість праворуч */
 @media (max-width: 700px) {
