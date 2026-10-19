@@ -5,6 +5,7 @@
   const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
   const range = (p, a, b) => clamp((p - a) / (b - a));   // відрізок [a, b] прогресу → 0…1
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -283,9 +284,11 @@
     $('.dir__art', d).replaceChildren(svg);
   })).catch(err => console.warn('dir art', err));
 
-  /* ---------- 5а. «Про нас»: три кола-патерни — обертання, «дихання», паралакс і відхід ---------- */
-  // Кола-патерни брендбуку 2.3 (assets/patterns/) інлайнимо як SVG. Поки секція в кадрі, кожне коло повільно
-  // обертається зі своєю швидкістю й напрямком і ледь «дихає»; скрол дає невеликий паралакс (у кожного кола свій).
+  /* ---------- 5а. «Про нас»: три кола-патерни — закочування, обертання, «дихання», паралакс і відхід ---------- */
+  // Кола-патерни брендбуку 2.3 (assets/patterns/) інлайнимо як SVG. Поки секція наїжджає, кола закочуються на своє
+  // місце збоку й знизу: зсув прив'язаний до скролу входу (у кожного кола своє вікно, ease-out наприкінці), кут — це
+  // пройдений шлях / радіус, як у справжнього кочення. Далі кожне коло повільно обертається зі своєю швидкістю
+  // й напрямком і ледь «дихає»; скрол дає невеликий паралакс (у кожного кола свій).
   // Коли секція йде з екрана, кола відходять по черзі (overlapping action): кожне у своєму вікні прогресу
   // зменшується, відпливає вгору й назовні, докручується й гасне. rAF працює, лише поки секція в кадрі;
   // reduced motion — кола стоять
@@ -302,21 +305,26 @@
     }).catch(err => console.warn('pattern', name, err));
   });
   // spin — °/с (знак — напрямок); breath — період «дихання», с; par — паралакс, частка екрана;
+  // in — вікно закочування в прогресі входу; fx / fy — звідки котиться (частки шару кіл: праворуч / знизу);
   // out — вікно відходу в прогресі виходу секції; dx / dy — куди відпливає (частки екрана), ds — зменшення, dr — докрут
   const ORB = [
-    { spin: 3, breath: 7.4, ph: 0, par: .05, out: [0, .66], dx: .08, dy: -.34, ds: -.34, dr: 40 },
-    { spin: -4.6, breath: 6.1, ph: 2.1, par: .1, out: [.1, .8], dx: -.12, dy: -.46, ds: -.46, dr: -60 },
-    { spin: 2.2, breath: 8.6, ph: 4.2, par: .03, out: [.22, .96], dx: .12, dy: -.26, ds: -.3, dr: 34 },
+    { spin: 3, breath: 7.4, ph: 0, par: .05, in: [.08, .84], fx: .6, fy: 0, out: [0, .66], dx: .08, dy: -.34, ds: -.34, dr: 40 },
+    { spin: -4.6, breath: 6.1, ph: 2.1, par: .1, in: [.22, .94], fx: .72, fy: .14, out: [.1, .8], dx: -.12, dy: -.46, ds: -.46, dr: -60 },
+    { spin: 2.2, breath: 8.6, ph: 4.2, par: .03, in: [.34, 1], fx: .26, fy: .5, out: [.22, .96], dx: .12, dy: -.26, ds: -.3, dr: 34 },
   ];
-  const orbs = orbEls.map((el, k) => ({ i: $('.about__orb-i', el), ang: k * 20, ...ORB[k] }));
-  let orbOn = false, orbRaf = 0, orbLast = 0, orbTime = 0, orbTop = 0, orbExit = 0;
+  const orbs = orbEls.map((el, k) => ({ el, i: $('.about__orb-i', el), ang: k * 20, r: 1, ...ORB[k] }));
+  let orbOn = false, orbRaf = 0, orbLast = 0, orbTime = 0, orbTop = 0, orbExit = 0, orbIn = 1, orbW = 0, orbsH = 0;
   const orbRender = () => {
     const vw = innerWidth, vh = innerHeight;
     orbs.forEach(o => {
+      // закочування: решта шляху (котиться ліворуч і вгору) і кут кочення проти годинникової = шлях / радіус
+      const k = 1 - easeOut(range(orbIn, o.in[0], o.in[1]));
+      const ix = o.fx * orbW * k, iy = o.fy * orbsH * k;
+      const roll = -Math.hypot(ix, iy) / o.r * 180 / Math.PI;
       const t = ease(range(orbExit, o.out[0], o.out[1]));
       const s = (1 + .016 * Math.sin(orbTime * 2 * Math.PI / o.breath + o.ph)) * (1 + o.ds * t);
-      const x = o.dx * t * vw, y = (o.dy * t + o.par * orbTop) * vh;
-      o.i.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${(o.ang + o.dr * t).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+      const x = ix + o.dx * t * vw, y = iy + (o.dy * t + o.par * orbTop) * vh;
+      o.i.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${(o.ang + roll + o.dr * t).toFixed(2)}deg) scale(${s.toFixed(4)})`;
       o.i.style.opacity = t > .5 ? (1 - range(t, .5, 1)).toFixed(3) : '';
     });
   };
@@ -329,21 +337,59 @@
     orbRaf = orbOn ? requestAnimationFrame(orbTick) : 0;
     if (!orbRaf) orbLast = 0;
   };
-  // гілка скрол-циклу (frame): лише числа — верх секції в екранах і прогрес виходу. Вихід починається, коли низ
-  // секції піднявся над краєм екрана (на мобільному кола — смуга під текстом: спершу вони трохи стоять у кадрі цілими),
-  // і закінчується, коли низ секції — на 15% висоти екрана
+  // гілка скрол-циклу (frame): лише числа — верх секції в екранах, прогрес входу й виходу. Вхід — шар кіл піднімається
+  // від низу екрана на свою висоту, але не більше екрана (desktop: шар — уся секція, тож вхід = наїзд на hero; мобільний:
+  // смуга під текстом, кола закочуються, коли до неї доходить скрол). Вихід починається, коли низ секції піднявся над
+  // краєм екрана (на мобільному кола спершу трохи стоять у кадрі цілими), і закінчується, коли низ секції — на 15%
+  // висоти екрана. Поки rAF кіл спить (секція поза кадром), кадр малюємо тут — кола не блимають на місці перед входом
   const orbsBox = $('.about__orbs');
-  let orbsH = 0;
-  new ResizeObserver(() => { orbsH = orbsBox.offsetHeight; }).observe(orbsBox);
+  let orbsOff = 0;
+  new ResizeObserver(() => {
+    orbsH = orbsBox.offsetHeight; orbW = orbsBox.offsetWidth; orbsOff = orbsBox.offsetTop;
+    orbs.forEach(o => { o.r = o.el.offsetWidth / 2 || 1; });
+    if (!reduce) aboutOrbs($('#about').getBoundingClientRect(), innerHeight);
+  }).observe(orbsBox);
   const aboutOrbs = (r, vh) => {
     const from = Math.min(vh, orbsH + vh * .2), to = vh * .15;
     orbTop = clamp(r.top / vh, -1, 1);
+    orbIn = clamp((vh - r.top - orbsOff) / Math.min(vh, orbsH || vh));
     orbExit = clamp((from - r.bottom) / (from - to));
+    if (!orbRaf) orbRender();
   };
   if (!reduce) new IntersectionObserver(([e]) => {
     orbOn = e.isIntersecting;
     if (orbOn && !orbRaf) orbRaf = requestAnimationFrame(orbTick);
   }).observe($('#about'));
+
+  /* ---------- 5б. «Про нас»: лід проявляється словами за скролом ---------- */
+  // Слова переходять з приглушеного (той самий колір, низька непрозорість) у повний, прив'язано до скролу: почали,
+  // коли верх ліду на 92% висоти екрана, закінчили, коли його низ на 80% — або коли секція стала на місце (верх біля
+  // краю екрана), якщо це раніше: у спокої лід завжди повний. Край проявлення м'який — на кілька слів. Скрінрідер
+  // читає цілий текст, розбита на слова копія aria-hidden. Без JS і при reduced motion — одразу повний колір
+  const lead = $('[data-words]');
+  const leadWords = [];
+  if (lead && !reduce) {
+    const text = lead.textContent.replace(/\s+/g, ' ').trim();
+    const vis = mk('span', '');
+    vis.setAttribute('aria-hidden', 'true');
+    text.split(' ').forEach((t, i) => {
+      if (i) vis.append(' ');
+      leadWords.push(vis.appendChild(Object.assign(mk('span', 'about__w'), { textContent: t })));
+    });
+    lead.replaceChildren(Object.assign(mk('span', 'sr-only'), { textContent: text }), vis);
+  }
+  const LEAD_DIM = .24, LEAD_SOFT = 6;   // непрозорість приглушеного слова; ширина м'якого краю, слів
+  let leadP = -1;
+  // гілка скрол-циклу (frame): прогрес → непрозорість кожного слова (лише коли прогрес змінився)
+  const leadScrub = (ar, vh) => {
+    const r = lead.getBoundingClientRect();
+    const a = vh * .92, end = Math.max(vh * .8 - r.height, r.top - ar.top);   // верх ліду в кінці проявлення
+    const p = clamp((a - r.top) / Math.max(1, a - end));
+    if (p === leadP) return;
+    leadP = p;
+    const n = leadWords.length, head = p * (n + LEAD_SOFT);
+    leadWords.forEach((w, i) => { w.style.opacity = lerp(LEAD_DIM, 1, clamp((head - i) / LEAD_SOFT)).toFixed(3); });
+  };
 
   /* ---------- 6. Проєкти: картки сходинками ---------- */
   // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
@@ -367,7 +413,7 @@
   }));
 
 
-  /* ---------- 7. Скрол-цикл: hero-картотека, кола «Про нас», «Підтримати», тема хедера ---------- */
+  /* ---------- 7. Скрол-цикл: hero-картотека, кола й лід «Про нас», «Підтримати», тема хедера ---------- */
   const hero = $('.hero');
   const heroContent = $('.hero__content');
   const heroSticky = $('.hero__sticky');
@@ -459,8 +505,10 @@
     heroHp = hp;
     heroLensScroll(hp);
 
-    // ПРО НАС: паралакс і відхід кіл (малює їхній rAF, поки секція в кадрі)
-    if (!reduce) aboutOrbs(about.getBoundingClientRect(), vh);
+    // ПРО НАС: закочування, паралакс і відхід кіл (малює їхній rAF, поки секція в кадрі); лід — словами за скролом
+    const ar = about.getBoundingClientRect();
+    if (!reduce) aboutOrbs(ar, vh);
+    if (leadWords.length) leadScrub(ar, vh);
 
     // ПІДТРИМКА
     const sr = support.getBoundingClientRect();
