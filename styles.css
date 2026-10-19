@@ -359,21 +359,21 @@ main:focus { outline: none; }
 /* ==========================================================
    2. ПРО НАС — лаймове поле, великий текст з маркерами, цифри
    ========================================================== */
-/* Продовження пагорба hero: те саме лаймове поле, синій текст (великий кегль — контраст 3.4:1, AA для великого),
-   підписи цифр — чорнило */
+/* Продовження пагорба hero: те саме лаймове поле, синій текст (великий кегль — контраст 3.4:1, AA для великого);
+   у блоці два кольори — лайм і синій; підпис року — чорнило (дрібний текст) */
 .about { position: relative; background: var(--field); color: var(--blue); padding: clamp(120px, 14vw, 240px) 0 clamp(96px, 10vw, 160px); }
-.about__in { display: grid; justify-items: start; }
+.about__in { display: grid; }
 .about__title { margin-bottom: clamp(28px, 3.4vw, 56px); }
-/* Recht 400, як заголовки; маркери — фраза на кольоровій плашці, плашка переноситься разом з рядком */
+/* Recht 400, як заголовки; маркер — фраза на синій плашці лаймом (один колір для всіх), плашка переноситься з рядком */
 .about__text { max-width: 1500px; font-size: clamp(30px, 4vw, 76px); line-height: 1.26; letter-spacing: -.035em; }
-.about__text mark { background: var(--bg); color: var(--fg); padding: 0 .14em; margin: 0 .02em; border-radius: .24em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.about__text mark { background: var(--blue); color: var(--lime); padding: 0 .14em; margin: 0 .02em; border-radius: .24em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .about__w { transition: opacity .12s linear; }
-.about__more { margin-top: clamp(32px, 4vw, 56px); }
+/* низ: кнопка ліворуч на рівні підпису, великий рік праворуч */
+.about__foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; margin-top: clamp(56px, 7vw, 120px); }
 .btn--blue { background: var(--blue); color: #fff; --fill: var(--ink); --fill-on: #fff; --ring: var(--blue); }
-.facts { justify-self: stretch; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; margin-top: clamp(64px, 8vw, 140px); }
-.fact { display: grid; gap: 14px; align-content: start; }
-.fact b { font-weight: 400; font-size: clamp(56px, 7vw, 136px); line-height: .9; letter-spacing: -.05em; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.fact span { color: var(--ink); font-size: clamp(16px, 1.15vw, 19px); line-height: 1.35; letter-spacing: .005em; max-width: 22ch; }
+.fact { display: grid; gap: 16px; justify-items: start; }
+.fact b { font-weight: 400; font-size: clamp(96px, 15vw, 280px); line-height: .78; letter-spacing: -.05em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--ink); font-size: clamp(16px, 1.15vw, 19px); line-height: 1.35; letter-spacing: .005em; max-width: 22ch; padding-left: .3em; }
 
 /* ==========================================================
    section head
@@ -879,8 +879,8 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   /* заголовок → лід → готова ілюстрація ланцюжка */
   .about { padding: 140px 0 96px; }
   .about__text { line-height: 1.3; }
-  .facts { grid-template-columns: 1fr 1fr; row-gap: 40px; }
-  .fact b { font-size: 13vw; }
+  .about__foot { flex-direction: column-reverse; align-items: flex-start; gap: 40px; }
+  .fact b { font-size: 36vw; }
   .sec-head { margin-bottom: 44px; }
   .dirs__grid { gap: 48px 18px; }
   .pgrid { --gap: 16px; }

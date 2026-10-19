@@ -291,7 +291,7 @@
 
   /* ---------- 5. «Про нас»: текст проявляється словами за скролом, цифри докручуються ---------- */
   // Слова переходять з приглушеного (той самий колір, низька непрозорість) у повний, прив'язано до скролу: почали,
-  // коли верх тексту на 92% висоти екрана, закінчили, коли його низ на 80%. Край проявлення м'який — на кілька слів;
+  // коли верх тексту на 88% висоти екрана, закінчили, коли його низ на 45% — проявлення розтягнуте на весь прохід тексту. Край проявлення м'який — на кілька слів;
   // маркер (<mark>) проявляється цілком, як одне слово. Скрінрідер читає цілий текст, розбита на слова копія aria-hidden.
   // Без JS і при reduced motion — одразу повний колір
   const lead = $('[data-words]');
@@ -309,12 +309,12 @@
     });
     lead.replaceChildren(Object.assign(mk('span', 'sr-only'), { textContent: text }), vis);
   }
-  const LEAD_DIM = .24, LEAD_SOFT = 6;   // непрозорість приглушеного слова; ширина м'якого краю, слів
+  const LEAD_DIM = .14, LEAD_SOFT = 6;   // непрозорість приглушеного слова; ширина м'якого краю, слів
   let leadP = -1;
   // гілка скрол-циклу (frame): прогрес → непрозорість кожного слова (лише коли прогрес змінився)
   const leadScrub = vh => {
     const r = lead.getBoundingClientRect();
-    const a = vh * .92, end = vh * .8 - r.height;   // верх тексту в кінці проявлення
+    const a = vh * .88, end = vh * .45 - r.height;   // верх тексту в кінці проявлення
     const p = clamp((a - r.top) / Math.max(1, a - end));
     if (p === leadP) return;
     leadP = p;
@@ -322,12 +322,12 @@
     leadWords.forEach((w, i) => { w.style.opacity = lerp(LEAD_DIM, 1, clamp((head - i) / LEAD_SOFT)).toFixed(3); });
   };
 
-  // Цифри: коли список у кадрі, кожна докручується до свого значення (1.4 с, ease-out, по черзі через 150 мс); великі —
-  // з останніх 400, рік — без розрядного пробілу
+  // Цифри: коли в кадрі, кожна докручується до свого значення (1.4 с, ease-out, по черзі через 150 мс); великі —
+  // з останніх 400; рік — назад від поточного, без розрядного пробілу
   const facts = $$('.fact b[data-count]');
   if (facts.length && !reduce) {
     const fmt = (b, v) => (b.dataset.count.length > 3 && !/^20\d\d$/.test(b.dataset.count) ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : String(v)) + (b.dataset.suffix || '');
-    facts.forEach(b => { const to = +b.dataset.count; b._from = to > 1000 ? to - 400 : 0; b.textContent = fmt(b, b._from); });
+    facts.forEach(b => { const to = +b.dataset.count; b._from = /^20\d\d$/.test(b.dataset.count) ? Math.max(new Date().getFullYear(), to + 8) : to > 1000 ? to - 400 : 0; b.textContent = fmt(b, b._from); });
     const fio = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
       fio.disconnect();
@@ -335,7 +335,7 @@
       const tick = now => {
         let done = true;
         facts.forEach((b, i) => {
-          const k = clamp((now - t0 - i * 150) / 1400), to = +b.dataset.count;
+          const k = clamp((now - t0 - i * 150) / 1800), to = +b.dataset.count;
           if (k < 1) done = false;
           b.textContent = fmt(b, Math.round(lerp(b._from, to, 1 - (1 - k) ** 3)));
         });
@@ -343,7 +343,7 @@
       };
       requestAnimationFrame(tick);
     }, { rootMargin: '0px 0px -15% 0px' });
-    fio.observe($('.facts'));
+    fio.observe(facts[0].parentNode);
   }
 
   /* ---------- 6. Проєкти: слайдер карток (стрілки й лічильник — розділ 14) ---------- */

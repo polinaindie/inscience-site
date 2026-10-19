@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=35">
+  <link rel="stylesheet" href="styles.css?v=36">
   <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
   <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -93,20 +93,18 @@
 </section>
 
 <!-- ============ 2. ПРО НАС ============ -->
-<section class="about" id="about" data-theme="field" style="--field:var(--lime);--on:var(--ink);--off:#fff">
+<section class="about" id="about" data-theme="field" style="--field:var(--lime);--on:var(--blue);--off:#fff">
   <div class="wrap about__in">
     <h2 class="h2 about__title reveal" data-ln>Наука належить людям</h2>
     <!-- текст проявляється словами за скролом: цілий текст для скрінрідера, розбиту на слова копію будує скрипт (aria-hidden);
          маркер — фраза цілком -->
-    <p class="about__text" data-words>INSCIENCE популяризує <mark style="--bg:var(--pink);--fg:var(--ink)">науку і доказову медицину</mark> та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо <mark style="--bg:var(--purple);--fg:#fff">українських вчених та лікарів/ок</mark> видимими і розвиваємо <mark style="--bg:#fff;--fg:var(--blue)">критичне мислення</mark> через науковий підхід до пізнання світу.</p>
-    <p class="about__more reveal"><a href="#" class="btn btn--xl btn--blue" data-ln>Про INSCIENCE</a></p>
-    <!-- цифри докручуються, коли список у кадрі (main.js); підписи — нове мікрокопі, на погодження -->
-    <ul class="facts reveal">
-      <li class="fact"><b data-count="2018">2018</b><span data-ln>рік, коли ми почали робити науку видимою</span></li>
-      <li class="fact"><b data-count="4">4</b><span data-ln>напрямки роботи</span></li>
-      <li class="fact"><b data-count="6">6</b><span data-ln>проєктів для дітей, науковиць, бізнесу і здоровʼя</span></li>
-      <li class="fact"><b data-count="1500" data-suffix="+">1 500+</b><span data-ln>учасників INSCIENCE Conference</span></li>
-    </ul>
+    <p class="about__text" data-words>INSCIENCE популяризує <mark>науку і доказову медицину</mark> та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо <mark>українських вчених та лікарів/ок</mark> видимими і розвиваємо <mark>критичне мислення</mark> через науковий підхід до пізнання світу.</p>
+    <!-- низ блоку: кнопка ліворуч, рік праворуч (докручується назад від поточного року, коли в кадрі — main.js);
+         підпис — нове мікрокопі, на погодження -->
+    <div class="about__foot">
+      <p class="about__more reveal"><a href="#" class="btn btn--xl btn--blue" data-ln>Про INSCIENCE</a></p>
+      <p class="fact reveal"><b data-count="2018">2018</b><span data-ln>рік, коли ми почали робити науку видимою</span></p>
+    </div>
   </div>
 </section>
 
@@ -382,7 +380,7 @@
 
 <!-- ============ 7. МЕДІА ============ -->
 <!-- Заглушки: реальні видання, але матеріали й описи умовні — замінити справжніми посиланнями. Секція ховається, якщо карток менше трьох -->
-<section class="media" id="media" data-theme="field" style="--field:var(--lime);--on:var(--ink);--off:#fff">
+<section class="media" id="media" data-theme="field" style="--field:var(--lime);--on:var(--blue);--off:#fff">
   <div class="wrap">
     <div class="sec-head">
       <h2 class="h2 reveal" id="media-title" data-ln>Про нас <br class="br-m">пишуть</h2>
@@ -541,6 +539,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=35"></script>
+<script src="main.js?v=36"></script>
 </body>
 </html>
