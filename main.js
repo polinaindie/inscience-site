@@ -1140,11 +1140,12 @@
     el.style.setProperty('--x', `${(e.clientX - r.left).toFixed(0)}px`);
     el.style.setProperty('--y', `${(e.clientY - r.top).toFixed(0)}px`);
   };
-  $$('.btn, .link, .req__btn, .mcard').forEach(el => {
+  // картка новини — те саме коло під вмістом; фокус приходить на посилання всередині, тож слухаємо focusin
+  $$('.btn, .link, .req__btn, .mcard, .abtn, .newscard').forEach(el => {
     el.addEventListener('pointerenter', e => fillXY(el, e));
     el.addEventListener('pointerleave', e => fillXY(el, e));
     // фокус з клавіатури — від центру
-    el.addEventListener('focus', () => { if (el.matches(':focus-visible')) { el.style.removeProperty('--x'); el.style.removeProperty('--y'); } });
+    el.addEventListener('focusin', e => { if (e.target.matches(':focus-visible')) { el.style.removeProperty('--x'); el.style.removeProperty('--y'); } });
   });
   // крок стрілки — у її напрямку
   const ARROW = { '↓': ['0px', '4px'], '↗': ['3px', '-3px'], '→': ['5px', '0px'] };
