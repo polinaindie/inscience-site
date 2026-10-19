@@ -94,7 +94,7 @@
 <!-- ============ 2. ПРО НАС ============ -->
 <section class="about" id="about" data-theme="field" style="--field:var(--green);--on:var(--paper)">
   <div class="wrap about__grid">
-    <h2 class="h2 about__title reveal" data-ln>Наука<br>належить<br><em class="about__acc">людям</em></h2>
+    <h2 class="h2 about__title reveal" data-ln>Наука <br class="br-m">належить<br><em class="about__acc">людям</em></h2>
     <!-- лід — рядками з маски: цілий текст для скрінрідера, розбиту на рядки копію будує скрипт (aria-hidden) -->
     <div class="about__body reveal">
       <p class="lead" data-ln="measure">
@@ -109,8 +109,12 @@
       <a href="#" class="link" data-ln><span class="link__t">Про INSCIENCE</span><span class="link__a" aria-hidden="true">→</span></a>
     </div>
   </div>
-  <!-- Форми розміру футера засипаються з боків і лягають рамкою під текстом (Matter.js). Малює скрипт -->
-  <div class="about__stage" aria-hidden="true"></div>
+  <!-- Три кола-патерни брендбуку скупчені праворуч і виходять за край; патерн інлайнить скрипт, рух — main.js -->
+  <div class="about__orbs reveal" aria-hidden="true">
+    <span class="about__orb about__orb--a pop" data-pat="density"><span class="about__orb-i"></span></span>
+    <span class="about__orb about__orb--b pop" data-pat="flow"><span class="about__orb-i"></span></span>
+    <span class="about__orb about__orb--c pop" data-pat="intersection"><span class="about__orb-i"></span></span>
+  </div>
 </section>
 
 <!-- ============ 3. НАПРЯМКИ ============ -->
@@ -120,33 +124,26 @@
       <h2 class="h2 reveal" data-ln>Одна мета.<br>Чотири <br class="br-m">напрямки</h2>
     </div>
 
-    <!-- посилання веде до першої картки свого напрямку в колоді (скрипт); без JS — до «Проєктів» -->
+    <!-- посилання веде до першої картки свого напрямку в колоді (скрипт); без JS — до «Проєктів».
+         Ілюстрацію з шарів форм брендбуку (.dir__art) складає скрипт -->
     <div class="dirs__grid reveal">
       <a class="dir" href="#projects" data-dir="flow" style="--c:var(--blue);--i:0">
-        <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--flow pop"></span>
-        </span>
+        <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Популяризація науки для дітей і дорослих</span>
         <span class="dir__more" data-ln><span data-count>4 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="intersection" style="--c:var(--lime);--i:1">
-        <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--intersection pop"></span>
-        </span>
+        <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Гендерна рівність у&nbsp;STEM</span>
         <span class="dir__more" data-ln><span data-count>1 проєкт</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="grid" style="--c:var(--pink);--i:2">
-        <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--grid pop"></span>
-        </span>
+        <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Співпраця науки, бізнесу та держави</span>
         <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>
       <a class="dir" href="#projects" data-dir="density" style="--c:var(--purple);--i:3">
-        <span class="dir__art" aria-hidden="true">
-          <span class="dir__disc dir__disc--density pop"></span>
-        </span>
+        <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Здоровʼя через доказову профілактику</span>
         <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
       </a>

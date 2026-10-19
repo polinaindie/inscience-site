@@ -31,7 +31,7 @@
     sprite.appendChild(sym);
   }))).catch(err => console.warn('icons', err));
 
-  // Силует кожної форми для фізики (футер, «Про нас»): точки контуру → опукла оболонка (в одиницях viewBox).
+  // Силует кожної форми для фізики футера: точки контуру → опукла оболонка (в одиницях viewBox).
   // Рахуємо один раз, коли спрайт готовий
   let outlinesMemo = null;
   const getOutlines = () => {
@@ -200,7 +200,7 @@
   if (location.hash) revealHash(location.hash);
   document.addEventListener('focusin', e => { const r = e.target.closest?.('.reveal:not(.in)'); if (r) revealNow(r); });
 
-  /* ---------- 5. Напрямки: лічильники проєктів ---------- */
+  /* ---------- 5. Напрямки: лічильники проєктів і ілюстрації з шарів форм ---------- */
   const cards = $$('.pcard');
   const plural = n => n === 1 ? 'проєкт' : (n >= 2 && n <= 4 ? 'проєкти' : 'проєктів');
   // лічильник уже є в HTML; тут лише звіряємо з картками
@@ -209,125 +209,141 @@
     $('[data-count]', d).textContent = `${n} ${plural(n)}`;
   });
 
-  // Кола-патерни брендбуку 2.3: інлайн SVG, частини згруповані для ритму на hover (CSS-класи pat-*)
-  const PC = 191.5;   // центр кола у viewBox 0 0 383 383
   const svgEl = (tag, attrs = {}) => {
     const el = document.createElementNS(NS, tag);
     Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
     return el;
   };
-  // GRID — смуги довші за коло: кожна колонка (верх + низ) окремою групою, парні й непарні — назустріч
-  const groupGrid = svg => {
-    const cols = new Map();
-    $$('path', svg).forEach(p => {
-      const x = parseFloat(p.getAttribute('d').slice(1));
-      const k = Math.round(x / 54.94);
-      if (!cols.has(k)) cols.set(k, svgEl('g', { class: `pat-col${k & 1 ? ' pat-col--odd' : ''}` }));
-      cols.get(k).appendChild(p);
-    });
-    const root = $('g', svg);
-    [...cols.keys()].sort((a, b) => a - b).forEach(k => root.appendChild(cols.get(k)));
+
+  // Ілюстрація напрямку — шари форм брендбуку, як слайд 1.4 «Multiple ideas»: велика база → менша форма іншого
+  // кольору → форма напрямку в кодовому кольорі (око синє, квітка лайм, стрілки рожеві, серце фіолетове).
+  // Контури беремо з ілюстрацій брендбуку (assets/illustrations/, елемент за id) і зі спрайта (#i-<name>);
+  // усе — у квадраті ART × ART. Шар: ill + ids — контури файлу ілюстрації; icon — форма спрайта (w — ширина
+  // в частках квадрата, x / y — центр); c — колір; hole — колір отвору форми (типово білий, як зіниця ока);
+  // r — поворот; hr — поворот на hover
+  const ART = 320;
+  const DIR_ART = {
+    // Наука для всіх: всесвіт, який стає видимим — бордова хмарка, дві зірки, синє око з білою зіницею
+    flow: [
+      { ill: 'icon', ids: ['Vector'], c: 'maroon', hr: -4 },
+      { ill: 'icon', ids: ['Vector_3'], c: 'hotpink', hr: -14 },
+      { ill: 'icon', ids: ['Vector_4'], c: 'lime', hr: 12 },
+      { icon: 'eye', c: 'blue', w: .8, x: .5, y: .48, hr: -6 },
+    ],
+    // Рівність у STEM: квітка в квітці — лаймова, червона, на ній нескінченність із двох рівних половин
+    intersection: [
+      { icon: 'flower', c: 'lime', hole: 'lime', w: 1, x: .5, y: .5, hr: 8 },
+      { ill: 'flower', ids: ['Vector_3'], c: 'red', hr: -14 },
+      { icon: 'infinity', c: 'purple', w: .62, x: .5, y: .5, hr: 10 },
+    ],
+    // Наука, бізнес і держава: три шари одне на одному — коло, «подушка», рожеві стрілки руху вперед
+    grid: [
+      { ill: 'combine', ids: ['Ellipse 15'], c: 'brown', hr: -4 },
+      { ill: 'combine', ids: ['Vector'], c: 'green', hr: 14 },
+      { icon: 'arrows', c: 'pink', w: .58, x: .52, y: .5, hr: -8 },
+    ],
+    // Здоровʼя: квітка, мʼяка подушка і фіолетове серце в центрі
+    density: [
+      { ill: 'lungs', ids: ['Vector'], c: 'blue', hr: -6 },
+      { ill: 'lungs', ids: ['Vector_2'], c: 'pink', hr: 12 },
+      { icon: 'heart', c: 'purple', w: .52, x: .5, y: .52, hr: -8 },
+    ],
   };
-  // INTERSECTION — кільця з 45°-секторів; кільце визначаємо за відстанню центру сектора від центру кола
-  const groupIntersection = svg => {
-    const root = $('g', svg), rings = [0, 1, 2, 3].map(i => svgEl('g', { class: `pat-ring${i & 1 ? ' pat-ring--odd' : ''}` }));
-    $$('path', root).forEach(p => {
-      const b = p.getBBox(), d = Math.hypot(b.x + b.width / 2 - PC, b.y + b.height / 2 - PC);
-      rings[d > 130 ? 0 : d > 75 ? 1 : d > 22 ? 2 : 3].appendChild(p);
-    });
-    rings.forEach(r => root.appendChild(r));
+  const ILL = [...new Set(Object.values(DIR_ART).flat().map(L => L.ill).filter(Boolean))];
+  const illDocs = {};
+  const illReady = Promise.all(ILL.map(n => fetch(`assets/illustrations/${n}.svg`).then(r => r.text()).then(txt => {
+    illDocs[n] = new DOMParser().parseFromString(txt, 'image/svg+xml').documentElement;
+  })));
+  const vbOf = el => el.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+  // шар: зовнішня група — CSS-рух (поява, hover), внутрішня — розміщення в квадраті (атрибут transform)
+  const artLayer = (L, k) => {
+    const g = svgEl('g', { class: 'dir__layer' });
+    g.style.cssText = `--k:${k};--hr:${L.hr || 0}deg;color:var(--${L.c})${L.hole ? `;--hole:var(--${L.hole})` : ''}`;
+    const rot = L.r ? `rotate(${L.r} ${ART / 2} ${ART / 2}) ` : '';
+    if (L.ill) {
+      const doc = illDocs[L.ill], [, , vw, vh] = vbOf(doc), s = ART / Math.max(vw, vh);
+      const inner = g.appendChild(svgEl('g', { transform: `${rot}translate(${(ART - vw * s) / 2} ${(ART - vh * s) / 2}) scale(${s})` }));
+      L.ids.forEach(id => {
+        const el = doc.querySelector(`[id="${id}"]`).cloneNode();
+        el.removeAttribute('id');
+        el.setAttribute('fill', 'currentColor');
+        inner.appendChild(el);
+      });
+    } else {
+      const [, , vw, vh] = vbOf(document.getElementById(`i-${L.icon}`)), w = L.w * ART, h = w * vh / vw;
+      const inner = g.appendChild(svgEl('g', rot ? { transform: rot } : {}));
+      inner.appendChild(svgEl('use', { href: `#i-${L.icon}`, x: L.x * ART - w / 2, y: L.y * ART - h / 2, width: w, height: h }));
+    }
+    return g;
   };
-  // DENSITY — чотири концентричні форми; три внутрішні «дихають» зі зсувом фази
-  const groupDensity = svg => {
-    $$('path', svg).forEach((p, i) => {
-      if (!i) return;
-      const g = svgEl('g', { class: 'pat-beat' });
-      g.style.setProperty('--k', i);
-      g.style.setProperty('--to', [0, .95, 1.07, 1.22][i]);
-      p.replaceWith(g); g.appendChild(p);
-    });
-  };
-  // FLOW — будуємо заново з тих самих кривих (смуга 54.93, S-хвиля 108.68 × 19.03), але з запасом угору й униз,
-  // щоб хвилі текли безшовно. Права половина — ліва, повернута на 180° навколо центру (як у брендбуку)
-  const buildFlow = () => {
-    const H = 54.934, W = 108.68, A = 19.035, X0 = 28.42 - W, Y0 = 255.896;
-    const COL = ['#054FF0', '#FF3666'];
-    const wave = (y, rev) => {   // межа смуги: ланцюжок S-кривих від X0 до X0 + 3W
-      const pts = [];
-      for (let i = 0; i <= 3; i++) pts.push([X0 + i * W, y - (i & 1 ? 0 : A)]);
-      if (rev) pts.reverse();
-      let d = `${rev ? 'L' : 'M'}${pts[0][0]} ${pts[0][1]}`;
-      for (let i = 1; i < pts.length; i++) {
-        const [xa, ya] = pts[i - 1], [xb, yb] = pts[i], xm = (xa + xb) / 2;
-        d += `C${xm} ${ya} ${xm} ${yb} ${xb} ${yb}`;
-      }
-      return d;
-    };
-    const half = () => {
-      const g = svgEl('g', { class: 'pat-flow' });
-      for (let k = -9; k <= 5; k++) g.appendChild(svgEl('path', { d: `${wave(Y0 + k * H)}${wave(Y0 + (k + 1) * H, true)}Z`, fill: COL[k & 1] }));
-      return g;
-    };
-    const svg = svgEl('svg', { viewBox: '0 0 383 383', class: 'dir__pat' });
-    const defs = svgEl('defs');
-    const clip = svgEl('clipPath', { id: 'pat-flow-half' });
-    clip.appendChild(svgEl('rect', { x: -1, y: -1, width: PC + 1, height: 385 }));
-    defs.appendChild(clip);
-    svg.appendChild(defs);
-    const L = svgEl('g', { 'clip-path': 'url(#pat-flow-half)' }), R = svgEl('g', { transform: `rotate(180 ${PC} ${PC})` });
-    L.appendChild(half());
-    R.appendChild(svgEl('g', { 'clip-path': 'url(#pat-flow-half)' })).appendChild(half());
-    svg.append(L, R);
-    return svg;
-  };
-  const PATTERN_GROUP = { grid: groupGrid, intersection: groupIntersection, density: groupDensity };
-  const patternsReady = Promise.all($$('.dir').map(d => {
-    const name = d.dataset.dir, disc = $('.dir__disc', d);
-    if (name === 'flow') { disc.replaceChildren(buildFlow()); return; }
-    return fetch(`assets/patterns/${name}.svg`).then(r => r.text()).then(txt => {
+  const dirEls = $$('.dir');
+  Promise.all([spriteReady, illReady]).then(() => dirEls.forEach(d => {
+    const svg = svgEl('svg', { viewBox: `0 0 ${ART} ${ART}`, class: 'dir__ill' });
+    DIR_ART[d.dataset.dir].forEach((L, k) => svg.appendChild(artLayer(L, k)));
+    $('.dir__art', d).replaceChildren(svg);
+  })).catch(err => console.warn('dir art', err));
+
+  /* ---------- 5а. «Про нас»: три кола-патерни — обертання, «дихання», паралакс і відхід ---------- */
+  // Кола-патерни брендбуку 2.3 (assets/patterns/) інлайнимо як SVG. Поки секція в кадрі, кожне коло повільно
+  // обертається зі своєю швидкістю й напрямком і ледь «дихає»; скрол дає невеликий паралакс (у кожного кола свій).
+  // Коли секція йде з екрана, кола відходять по черзі (overlapping action): кожне у своєму вікні прогресу
+  // зменшується, відпливає вгору й назовні, докручується й гасне. rAF працює, лише поки секція в кадрі;
+  // reduced motion — кола стоять
+  const orbEls = $$('.about__orb');
+  orbEls.forEach(el => {
+    const name = el.dataset.pat;
+    fetch(`assets/patterns/${name}.svg`).then(r => r.text()).then(txt => {
       const doc = new DOMParser().parseFromString(txt, 'image/svg+xml').documentElement;
-      const svg = svgEl('svg', { viewBox: doc.getAttribute('viewBox'), class: 'dir__pat' });
+      const svg = svgEl('svg', { viewBox: doc.getAttribute('viewBox') });
       svg.innerHTML = doc.innerHTML
         .replace(/id="([^"]+)"/g, `id="pat-${name}-$1"`)
         .replace(/url\(#([^)]+)\)/g, `url(#pat-${name}-$1)`);
-      disc.replaceChildren(svg);   // у DOM — щоб getBBox працював
-      PATTERN_GROUP[name](svg);
+      $('.about__orb-i', el).replaceChildren(svg);
     }).catch(err => console.warn('pattern', name, err));
-  }));
-
-  // Ритм диска — один цикл (.is-play): коли диск уперше в кадрі — каскадом 120 мс зліва направо, далі — від hover,
-  // фокусу й тапу. Нескінченного автоплею немає; поза кадром цикл стоїть на паузі (.is-off)
-  const dirsGrid = $('.dirs__grid');
-  const dirEls = $$('.dir', dirsGrid);
-  let dirsReady = false;
-  const playDir = d => { if (!reduce && dirsReady) d.classList.add('is-play'); };
-  const dirSeen = new Set(), dirDone = new Set();
-  // перший цикл: лише для дисків у кадрі
-  const firstPlay = () => {
-    if (reduce || !dirsReady) return;
-    dirEls.filter(d => dirSeen.has(d) && !dirDone.has(d)).forEach((d, k) => {
-      dirDone.add(d);
-      setTimeout(() => playDir(d), 700 + k * 120);   // диск спершу зʼявляється (.pop), потім оживає
+  });
+  // spin — °/с (знак — напрямок); breath — період «дихання», с; par — паралакс, частка екрана;
+  // out — вікно відходу в прогресі виходу секції; dx / dy — куди відпливає (частки екрана), ds — зменшення, dr — докрут
+  const ORB = [
+    { spin: 3, breath: 7.4, ph: 0, par: .05, out: [0, .66], dx: .08, dy: -.34, ds: -.34, dr: 40 },
+    { spin: -4.6, breath: 6.1, ph: 2.1, par: .1, out: [.1, .8], dx: -.12, dy: -.46, ds: -.46, dr: -60 },
+    { spin: 2.2, breath: 8.6, ph: 4.2, par: .03, out: [.22, .96], dx: .12, dy: -.26, ds: -.3, dr: 34 },
+  ];
+  const orbs = orbEls.map((el, k) => ({ i: $('.about__orb-i', el), ang: k * 20, ...ORB[k] }));
+  let orbOn = false, orbRaf = 0, orbLast = 0, orbTime = 0, orbTop = 0, orbExit = 0;
+  const orbRender = () => {
+    const vw = innerWidth, vh = innerHeight;
+    orbs.forEach(o => {
+      const t = ease(range(orbExit, o.out[0], o.out[1]));
+      const s = (1 + .016 * Math.sin(orbTime * 2 * Math.PI / o.breath + o.ph)) * (1 + o.ds * t);
+      const x = o.dx * t * vw, y = (o.dy * t + o.par * orbTop) * vh;
+      o.i.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0) rotate(${(o.ang + o.dr * t).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+      o.i.style.opacity = t > .5 ? (1 - range(t, .5, 1)).toFixed(3) : '';
     });
   };
-  dirEls.forEach(d => {
-    // цикл скінчився — знімаємо клас, щоб наступний hover / фокус / тап запустив його знову
-    d.addEventListener('animationend', () => {
-      if (!d.getAnimations({ subtree: true }).some(a => a.animationName?.startsWith('pat') && a.playState !== 'finished')) d.classList.remove('is-play');
-    });
-    d.addEventListener('mouseenter', () => playDir(d));
-    d.addEventListener('focus', () => { if (d.matches(':focus-visible')) playDir(d); });
-    d.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') playDir(d); });
-  });
-  if (!reduce) {
-    const dio = new IntersectionObserver(entries => {
-      entries.forEach(e => { if (e.isIntersecting) dirSeen.add(e.target.closest('.dir')); });
-      firstPlay();
-    }, { threshold: .6 });
-    dirEls.forEach(d => dio.observe($('.dir__art', d)));
-    new IntersectionObserver(([e]) => dirsGrid.classList.toggle('is-off', !e.isIntersecting)).observe(dirsGrid);
-    patternsReady.then(() => { dirsReady = true; firstPlay(); });
-  }
+  const orbTick = now => {
+    const dt = Math.min(64, now - (orbLast || now)) / 1000;
+    orbLast = now;
+    orbTime += dt;
+    orbs.forEach(o => { o.ang += o.spin * dt; });
+    orbRender();
+    orbRaf = orbOn ? requestAnimationFrame(orbTick) : 0;
+    if (!orbRaf) orbLast = 0;
+  };
+  // гілка скрол-циклу (frame): лише числа — верх секції в екранах і прогрес виходу. Вихід починається, коли низ
+  // секції піднявся над краєм екрана (на мобільному кола — смуга під текстом: спершу вони трохи стоять у кадрі цілими),
+  // і закінчується, коли низ секції — на 15% висоти екрана
+  const orbsBox = $('.about__orbs');
+  let orbsH = 0;
+  new ResizeObserver(() => { orbsH = orbsBox.offsetHeight; }).observe(orbsBox);
+  const aboutOrbs = (r, vh) => {
+    const from = Math.min(vh, orbsH + vh * .2), to = vh * .15;
+    orbTop = clamp(r.top / vh, -1, 1);
+    orbExit = clamp((from - r.bottom) / (from - to));
+  };
+  if (!reduce) new IntersectionObserver(([e]) => {
+    orbOn = e.isIntersecting;
+    if (orbOn && !orbRaf) orbRaf = requestAnimationFrame(orbTick);
+  }).observe($('#about'));
 
   // Колода проєктів: на десктопі сцена закріплюється, скрол гортає картки, як спікер — картки свого виступу.
   // Поточна стоїть у слоті, наступні чекають у ряд праворуч (клік по видимій — гортаємо до неї); заїжджаючи,
@@ -457,7 +473,7 @@
   addEventListener('resize', () => { clearTimeout(rzP); rzP = setTimeout(() => { layoutDeck(); renderDeck(true); }, 150); });
 
 
-  /* ---------- 7. Скрол-цикл: hero-картотека, колода, «Підтримати», тема хедера ---------- */
+  /* ---------- 7. Скрол-цикл: hero-картотека, кола «Про нас», колода, «Підтримати», тема хедера ---------- */
   const hero = $('.hero');
   const heroContent = $('.hero__content');
   const heroSticky = $('.hero__sticky');
@@ -545,6 +561,9 @@
     const hp = reduce ? 0 : progress(hero);
     heroHp = hp;
     heroLensScroll(hp);
+
+    // ПРО НАС: паралакс і відхід кіл (малює їхній rAF, поки секція в кадрі)
+    if (!reduce) aboutOrbs(about.getBoundingClientRect(), vh);
 
     // ПРОЄКТИ: колода
     if (deckOn) renderDeck();
@@ -825,135 +844,6 @@
       clearTimeout(rzF);
       rzF = setTimeout(() => { lastVW = innerWidth; teardown(); init(); }, 200);
     });
-  }
-
-  /* ---------- 10а. «Про нас»: форми засипаються з боків і лягають рамкою під текстом (Matter.js, як у футері) ---------- */
-  // Рамка, а не вистава: спершу з'являється текст, слідом — один раз — форми розміру футера влітають з-за лівого
-  // й правого краю і лягають двома низькими купами в нижніх кутах (трохи «втоплені» за край секції). Над ними —
-  // невидима стеля на рівні низу тексту: у текст форми не залітають, центр під ним лишається вільним. Лайму немає —
-  // він лишається акцентом «людям». Відлежались — фізика зупиняється; без руху купа одразу лежить
-  const pourZone = $('.about__stage');
-  if (pourZone && window.Matter) {
-    const { Engine, Runner, Bodies, Body, Composite, Events, Vertices } = Matter;
-    const POUR_COLORS = ['pink', 'paper', 'purple', 'blue', 'coral', 'maroon', 'brown'];
-    const aboutBody = $('.about__body');
-    const aboutText = [$('.about__title'), ...aboutBody.children];   // сам лід — без нижнього відступу (мобільний)
-    let pe = null, pr = null, pShapes = [], pTimers = [], pSize = '';
-
-    const pRender = () => pShapes.forEach(s => {
-      const { x, y } = s.body.position;
-      s.el.style.transform = `translate(${x}px,${y}px) rotate(${s.body.angle}rad) translate(${-s.cx}px,${-s.cy}px)`;
-    });
-    const pTeardown = () => {
-      pTimers.forEach(clearTimeout); pTimers = [];
-      if (pr) Runner.stop(pr);
-      if (pe) { Events.off(pe); Composite.clear(pe.world, false); Engine.clear(pe); }
-      pShapes.forEach(s => s.el.remove()); pShapes = [];
-      pe = pr = null;
-    };
-    // still — без анімації: прораховуємо падіння наперед і малюємо, як форми лягли
-    const pour = still => {
-      const outlines = getOutlines();
-      const W = pourZone.clientWidth, H = pourZone.clientHeight;
-      pSize = `${W}x${H}`;
-      const ceil = Math.max(...aboutText.map(el => el.getBoundingClientRect().bottom)) - pourZone.getBoundingClientRect().top + 24;
-      const base = Math.min(W >= 1100 ? W / 6 : W >= 600 ? W / 4.2 : W / 3.6, (H - ceil) * .55);
-      // підлога — пологий «пагорб»: від центру спадає до країв, тож форми скочуються в кути й центр лишається вільним.
-      // Крайні стіни трохи за краєм екрана; форма, що влітає з-за краю, «бачить» їх лише коли вже вся всередині
-      const sink = base * .12, rise = base * .4, edge = base * .1, T = 400, WALL = 2;
-      const solid = { isStatic: true, friction: .6 };
-      // схил: верх лежить на відрізку від (−edge, H + sink) біля краю до (W/2, H − rise) у центрі
-      const slope = Math.atan2(rise + sink, W / 2 + edge), len = Math.hypot(W / 2 + edge, rise + sink);
-      const plane = side => Bodies.rectangle(
-        W / 2 + side * (W / 4 + edge / 2) - side * Math.sin(slope) * T / 2, H + (sink - rise) / 2 + Math.cos(slope) * T / 2,
-        len, T, { ...solid, angle: side * slope });
-      pe = Engine.create({ positionIterations: 8, velocityIterations: 6 });
-      Composite.add(pe.world, [
-        plane(-1), plane(1),
-        Bodies.rectangle(W / 2, ceil - T / 2, W + 4 * (base + T), T, solid),                         // стеля — низ тексту
-        Bodies.rectangle(-edge - T / 2, H / 2, T, H * 4, { ...solid, collisionFilter: { category: WALL } }),
-        Bodies.rectangle(W + edge + T / 2, H / 2, T, H * 4, { ...solid, collisionFilter: { category: WALL } }),
-      ]);
-      const names = shuffle(ICONS.filter(n => outlines[n])).slice(0, (W >= 600 ? 3 : 2) * 2);
-      const colors = shuffle(POUR_COLORS.slice());
-      // по черзі зліва і справа: перша з кожного боку лягає в кут, друга — поруч, третя — зверху між ними
-      const LAND = [.04, .13, .08];
-      const add = i => {
-        const o = outlines[names[i]], left = i % 2 === 0, row = i >> 1, dir = left ? 1 : -1;
-        const size = base * (.85 + Math.random() * .3), k = size / Math.max(o.w, o.h);
-        const hull = o.hull.map(p => ({ x: p.x * k, y: p.y * k }));
-        const c = Vertices.centre(hull);
-        const x = left ? -size * .6 : W + size * .6, y = ceil + size * .72;
-        const body = Bodies.fromVertices(x, y, [hull], {
-          restitution: .1, friction: .8, frictionAir: .012, density: .002, angle: Math.random() * Math.PI * 2,
-          collisionFilter: { mask: ~WALL },
-        });
-        const tx = W * LAND[row % LAND.length] + size * .6;                     // скільки пролетіти всередину
-        const steps = Math.sqrt(2 * Math.max(60, H - size / 2 - y) / .278);   // кроків до підлоги (g ≈ .278 px/крок²)
-        Body.setVelocity(body, { x: dir * tx / (steps * .9), y: 0 });
-        Body.setAngularVelocity(body, dir * (.02 + Math.random() * .03));
-        const el = document.createElement('div');
-        el.className = 'about__shape';
-        el.style.cssText = `width:${o.w * k}px;height:${o.h * k}px;color:var(--${colors[i % colors.length]})`;
-        el.innerHTML = `<svg viewBox="0 0 ${o.w} ${o.h}"><use href="#i-${names[i]}"/></svg>`;
-        pourZone.appendChild(el);
-        Composite.add(pe.world, body);
-        pShapes.push({ body, el, cx: c.x, cy: c.y, left, armed: false });
-      };
-      // центр перетнув край екрана — тепер крайня стіна її тримає
-      const arm = () => pShapes.forEach(s => {
-        const { x } = s.body.position;
-        if (!s.armed && (s.left ? x > 0 : x < W)) { s.armed = true; s.body.collisionFilter.mask = -1; }
-      });
-      if (still) {
-        const step = n => { for (let t = 0; t < n; t++) { Engine.update(pe, 1000 / 60); arm(); } };
-        names.forEach((_, i) => { add(i); step(12); });
-        step(600);
-        pRender();
-        return;
-      }
-      let calm = 0;
-      Events.on(pe, 'afterUpdate', () => {
-        arm();
-        pRender();
-        if (pShapes.length < names.length) return;
-        calm = pShapes.every(s => s.body.speed < .15 && s.body.angularSpeed < .01) ? calm + 1 : 0;
-        if (calm > 30) Runner.stop(pr);
-      });
-      pr = Runner.create();
-      Runner.run(pr, pe);
-      names.forEach((_, i) => pTimers.push(setTimeout(() => add(i), i * 180)));
-      pTimers.push(setTimeout(() => Runner.stop(pr), 6000));
-    };
-
-    // Тригер: лід «Про нас» уже з'являється і низ секції (куди лягають форми) в кадрі — на десктопі це мить, коли
-    // секція доїхала; на мобільному — коли дочитали до низу. Прийшли якорем — без затримки
-    const floor = pourZone.appendChild(Object.assign(document.createElement('div'), { style: 'position:absolute;left:0;bottom:0;width:1px;height:1px' }));
-    let poured = false, floorIn = false;
-    const check = () => {
-      if (poured || !floorIn || !aboutBody.classList.contains('in')) return;
-      poured = true;
-      const delay = reduce || aboutBody.classList.contains('is-instant') ? 0 : 300;
-      Promise.all([spriteReady, document.fonts.ready]).then(() => setTimeout(() => pour(reduce), delay));
-    };
-    const mo = new MutationObserver(check);
-    mo.observe(aboutBody, { attributes: true, attributeFilter: ['class'] });
-    const fio = new IntersectionObserver(([e]) => {
-      floorIn = e.isIntersecting;
-      check();
-      if (poured) { fio.disconnect(); mo.disconnect(); }
-    });
-    fio.observe(floor);
-    // змінився розмір — купу перераховуємо одразу лежачою, без повторного засипання
-    let rzP;
-    new ResizeObserver(() => {
-      clearTimeout(rzP);
-      rzP = setTimeout(() => {
-        if (!pe || `${pourZone.clientWidth}x${pourZone.clientHeight}` === pSize) return;
-        pTeardown();
-        pour(true);
-      }, 200);
-    }).observe(pourZone);
   }
 
   /* ---------- 11. Hero: «Великі світи» і лупа «Фокус» ---------- */

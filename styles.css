@@ -347,28 +347,37 @@ main:focus { outline: none; }
 .has-stack .about { z-index: 1; margin-top: -100vh; margin-top: -100svh; }
 
 /* ==========================================================
-   2. ПРО НАС — кольорове поле (зелений), мова «Підтримати»
+   2. ПРО НАС — кольорове поле, мова «Підтримати»
    ========================================================== */
-/* Один екран, як майстер-слайд брендбуку 2.2: угорі заголовок і лід (Z-рух), під ними — форми, що засипались з боків.
-   Заголовок — щільний блок завширшки з «належить»: «людям» притиснуте до його правого краю */
+/* Один екран, як слайд брендбуку «Knowledge in motion»: ліворуч великий заголовок у два рядки («людям» притиснуте
+   до правого краю блоку) і під ним лід вузькою колонкою; праворуч — три кола-патерни, скупчені й за краєм кадру.
+   Текст іде стовпчиком (flex), тож grid-розміщення заголовка й ліду нижче не діє */
 .about {
-  position: relative; overflow: clip;
-  min-height: 100vh; min-height: 100svh; padding: calc(var(--hdr) + 4vh) 0 6vh;
+  position: relative; overflow: clip; display: flex;
+  min-height: 100vh; min-height: 100svh; padding: calc(var(--hdr) + 8vh) 0 8vh;
   background: var(--field); color: var(--on); --hole: var(--field);
 }
 .about__grid {
   position: relative; z-index: 1; width: 100%;
-  display: grid; grid-template-columns: 7fr 5fr; gap: 0 40px;
-  --t: clamp(46px, min(7.2vw, 12vh), 112px);   /* кегль заголовка; рядок — .84 кегля */
+  display: flex; flex-direction: column; align-items: flex-start; gap: clamp(28px, 5vh, 56px);
+  --t: clamp(46px, min(5.6vw, 10.5vh), 112px);   /* кегль заголовка; рядок — .84 кегля */
 }
 .about__title { grid-column: 1; grid-row: 1; justify-self: start; width: max-content; font-size: var(--t); line-height: .84; }
 .about__acc { display: block; text-align: right; font-style: normal; font-weight: 700; color: var(--lime); }
 .about__body { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
-.about .lead { font-size: clamp(19px, min(1.85vw, 3.3vh), 30px); }
-/* Форми — шар під текстом на всю секцію; фізика (main.js) кладе їх нижче за текст */
-.about__stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-.about__shape { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
-.about__shape > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.about .lead { max-width: 23em; font-size: clamp(18px, min(1.45vw, 2.7vh), 24px); }
+/* Кола — шар під текстом у правій частині секції; центр (--x, --y) — у частках шару, діаметр --d.
+   Зовнішній елемент зʼявляється, як форма футера (.pop); внутрішній крутить і відводить скрипт (transform) */
+.about__orbs { position: absolute; z-index: 0; top: 0; right: 0; bottom: 0; width: 58%; pointer-events: none; }
+.about__orb {
+  position: absolute; left: calc(var(--x) - var(--d) / 2); top: calc(var(--y) - var(--d) / 2);
+  width: var(--d); aspect-ratio: 1;
+}
+.about__orb--a { --d: min(66vh, 42vw); --x: 72%; --y: 17%; --i: 3; }
+.about__orb--b { --d: min(38vh, 24vw); --x: 33%; --y: 55%; --i: 5; }
+.about__orb--c { --d: min(62vh, 40vw); --x: 83%; --y: 85%; --i: 7; }
+.about__orb-i { display: block; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; will-change: transform; }
+.about__orb-i > svg { display: block; width: 100%; height: 100%; }
 
 /* ==========================================================
    section head
@@ -401,45 +410,37 @@ main:focus { outline: none; }
 /* ==========================================================
    3. НАПРЯМКИ
    ========================================================== */
-/* заголовок — той самий .h2, що й в інших секціях; під колами — підписи в системі карток (назва як заголовок
-   новини, кількість — як дата/мітка) */
+/* заголовок — той самий .h2, що й в інших секціях; під ним — чотири картки з тонкою лінією (28%, радіус 28):
+   угорі ілюстрація з шарів форм брендбуку, унизу назва (як заголовок новини) і кількість проєктів (лейбл) */
 .dirs { padding: 10vh 0 18vh; }
-.dirs__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px var(--dgap); --d0: 200ms; }   /* підписи — слідом за дисками */
+.dirs__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--dgap); --d0: 360ms; }   /* підписи — слідом за шарами */
 .dir {
-  position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
-  text-decoration: none; border-radius: 28px;
+  position: relative; display: flex; flex-direction: column;
+  padding: clamp(20px, 1.6vw, 28px); border-radius: 28px; text-decoration: none;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  transition: border-color .4s var(--ease);
 }
+.dir:focus-visible { border-color: currentColor; }
+@media (hover: hover) { .dir:hover { border-color: currentColor; } }
 
-/* Диск: квадрат на всю колонку, підпис по центру під ним (лейаут «One system, different rhythms» із брендбуку) */
-.dir__art {
-  position: relative; display: block; width: 100%; aspect-ratio: 1; margin-bottom: 28px;
-  transition: transform .6s var(--ease);
+/* Ілюстрація (як слайд 1.4 «Multiple ideas»): база → менша форма → форма напрямку; шари складає скрипт.
+   Поява — build → combine: шари по черзі виходять, як форми футера, трохи розведені вгору сходинкою,
+   і лягають одне на одне. Hover / фокус — шари трохи розходяться й повертаються */
+.dir__art { display: block; width: 84%; aspect-ratio: 1; margin: 6% auto 36px; }
+.dir__ill { display: block; width: 100%; height: 100%; overflow: visible; }
+.dir__layer { transform-box: fill-box; transform-origin: 50% 50%; transition: transform .7s var(--ease); }
+.js .dirs__grid:not(.in) .dir__layer { opacity: 0; }
+.dirs__grid.in .dir__layer { animation: dirBuild 1.3s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 120ms + var(--k) * 140ms); }
+.dirs__grid.is-instant .dir__layer { animation: none; }
+@keyframes dirBuild {
+  0% { opacity: 0; scale: .5; translate: 0 calc(var(--k) * -22px); filter: blur(6px); }
+  40% { opacity: 1; scale: 1; translate: 0 calc(var(--k) * -22px); filter: blur(0); }
+  100% { opacity: 1; scale: 1; translate: none; filter: none; }
 }
-.dir:focus-visible .dir__art { transform: scale(1.03) rotate(-3deg); }
-@media (hover: hover) { .dir:hover .dir__art { transform: scale(1.03) rotate(-3deg); } }
-/* Коло-патерн брендбуку 2.3 (GRID / FLOW / INTERSECTION / DENSITY), інлайн SVG вставляє скрипт; зʼявляється, як форма (.pop) */
-.dir__disc { position: absolute; inset: 0; display: block; border-radius: 50%; overflow: hidden; }
-.dir__pat { display: block; width: 100%; height: 100%; }
-.dir__pat :is(.pat-col, .pat-flow, .pat-ring, .pat-beat) { transform-box: view-box; transform-origin: 50% 50%; }
-/* Ритм патерну — один цикл: коли диск уперше в кадрі (каскад 120 мс зліва направо), далі — від hover, фокусу й тапу.
-   Клас .is-play ставить і знімає скрипт; нескінченного автоплею немає, поза кадром — пауза.
-   GRID — колонки зсуваються почергово вгору/вниз; FLOW — хвилі течуть (половини назустріч);
-   INTERSECTION — кільця повертаються почергово на 45°; DENSITY — внутрішні форми «дихають» */
-.dir.is-play .pat-col { animation: patCol 2.8s ease-in-out; }
-.dir.is-play .pat-col--odd { animation-name: patColOdd; }
-@keyframes patCol { 0%, 100% { transform: none; } 50% { transform: translateY(54.9px); } }
-@keyframes patColOdd { 0%, 100% { transform: none; } 50% { transform: translateY(-54.9px); } }
-.dir.is-play .pat-flow { animation: patFlow 4.8s ease-in-out; }
-@keyframes patFlow { to { transform: translateY(109.87px); } }   /* рівно період хвилі — кінець збігається з початком */
-.dir.is-play .pat-ring { animation: patRing 3.2s var(--ease); }
-.dir.is-play .pat-ring--odd { animation-name: patRingOdd; }
-@keyframes patRing { 0%, 15% { transform: rotate(0deg); } 50%, 65% { transform: rotate(45deg); } 100% { transform: rotate(90deg); } }
-@keyframes patRingOdd { 0%, 15% { transform: rotate(0deg); } 50%, 65% { transform: rotate(-45deg); } 100% { transform: rotate(-90deg); } }
-.dir.is-play .pat-beat { animation: patBeat 2.4s ease-in-out both; animation-delay: calc(var(--k, 0) * .3s); }   /* хвиля від краю до центру */
-@keyframes patBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(var(--to, 1.08)); } }
-.dirs__grid.is-off .dir.is-play :is(.pat-col, .pat-flow, .pat-ring, .pat-beat) { animation-play-state: paused; }
+.dir:focus-visible .dir__layer { transform: translateY(calc(var(--k) * -7px)) rotate(var(--hr)) scale(calc(1 + var(--k) * .025)); }
+@media (hover: hover) { .dir:hover .dir__layer { transform: translateY(calc(var(--k) * -7px)) rotate(var(--hr)) scale(calc(1 + var(--k) * .025)); } }
 
-.dir__name { font-weight: 500; font-size: clamp(20px, 1.75vw, 28px); line-height: 1.05; text-transform: uppercase; text-wrap: balance; margin-bottom: 14px; }
+.dir__name { font-weight: 500; font-size: clamp(20px, 1.6vw, 26px); line-height: 1.05; text-transform: uppercase; text-wrap: balance; margin-bottom: 14px; }
 .dir__more { margin-top: auto; opacity: .82; }
 .dir__arrow { display: inline-block; transition: transform .3s var(--ease); }
 .dir:focus-visible .dir__arrow { transform: translateY(3px); }   /* ↓ — якір: крок униз */
@@ -824,10 +825,13 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .hero__ctas .btn { height: 60px; padding: 0 12px; font-size: clamp(14px, 4.4vw, 17px); }
   .about__grid, .support__grid { grid-template-columns: 1fr; gap: 36px; }
   /* заголовок → лід → готова ілюстрація ланцюжка */
-  .about { padding: calc(var(--hdr) + 5vh) 0 32px; }
+  .about { padding: calc(var(--hdr) + 5vh) 0 calc(var(--orbs) + 4vw); --orbs: 104vw; }
   .about__grid { gap: 28px; --t: calc((100vw - 2 * var(--pad)) / 5.5); }   /* «належить» — на всю ширину */
-  .about__body { grid-column: 1; grid-row: 2; }
-  .about__body { padding-bottom: 64vw; }   /* місце під текстом, куди засипаються форми */
+  /* кола — під текстом на всю ширину, той самий кластер: велике за правим краєм, середнє ліворуч, велике за низом */
+  .about__orbs { top: auto; left: 0; width: 100%; height: var(--orbs); }
+  .about__orb--a { --d: 68vw; --x: 80%; --y: 30%; }
+  .about__orb--b { --d: 40vw; --x: 26%; --y: 52%; }
+  .about__orb--c { --d: 64vw; --x: 70%; --y: 90%; }
   .sec-head { margin-bottom: 44px; }
   .dirs__grid { gap: 48px 18px; }
   .pdeck { --gap: 14px; }
@@ -857,15 +861,15 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .plogo { height: calc(var(--h) * .72); }
   .marquee__list li::after { width: 22px; height: 22px; margin-inline: 32px; }
 }
-/* Напрямки на мобільному: рядки — диск ліворуч, назва й кількість праворуч */
+/* Напрямки на мобільному: картки рядками — ілюстрація ліворуч (≈ 40% картки, не дрібніше), назва й кількість праворуч */
 @media (max-width: 700px) {
-  .dirs__grid { grid-template-columns: 1fr; gap: 0; border-top: 1px solid var(--line); }
+  .dirs__grid { grid-template-columns: 1fr; gap: 12px; }
   .dir {
-    display: grid; grid-template-columns: 88px 1fr; grid-template-rows: 1fr auto auto 1fr; text-align: left;
-    column-gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    display: grid; grid-template-columns: 42% 1fr; grid-template-rows: 1fr auto auto 1fr;
+    column-gap: 18px; padding: 18px 20px 18px 14px;
   }
-  .dir__art { grid-row: 1 / -1; width: 88px; margin: 0; align-self: center; }
-  .dir__name { grid-row: 2; grid-column: 2; margin-bottom: 8px; font-size: 20px; hyphens: manual; }
+  .dir__art { grid-row: 1 / -1; width: 100%; margin: 0; align-self: center; }
+  .dir__name { grid-row: 2; grid-column: 2; margin-bottom: 10px; font-size: 19px; hyphens: manual; }
   .dir__more { grid-row: 3; grid-column: 2; justify-self: start; margin-top: 0; }
 }
 
