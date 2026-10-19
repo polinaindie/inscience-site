@@ -94,9 +94,9 @@
 <section class="about" id="about" data-theme="field" style="--field:var(--green);--on:var(--paper)">
   <div class="wrap about__grid">
     <h2 class="h2 about__title reveal" data-ln>Наука <br class="br-m">належить<br><em class="about__acc">людям</em></h2>
-    <!-- лід — рядками з маски: цілий текст для скрінрідера, розбиту на рядки копію будує скрипт (aria-hidden) -->
+    <!-- лід проявляється словами за скролом: цілий текст для скрінрідера, розбиту на слова копію будує скрипт (aria-hidden) -->
     <div class="about__body reveal">
-      <p class="lead" data-ln="measure">
+      <p class="lead about__lead" data-words>
         INSCIENCE популяризує науку і доказову медицину та підвищує їхню цінність для суспільства, бізнесу та держави. Ми робимо
         українських вчених
         та
@@ -108,11 +108,12 @@
       <a href="#" class="link" data-ln><span class="link__t">Про INSCIENCE</span><span class="link__a" aria-hidden="true">→</span></a>
     </div>
   </div>
-  <!-- Три кола-патерни брендбуку скупчені праворуч і виходять за край; патерн інлайнить скрипт, рух — main.js -->
-  <div class="about__orbs reveal" aria-hidden="true">
-    <span class="about__orb about__orb--a pop" data-pat="density"><span class="about__orb-i"></span></span>
-    <span class="about__orb about__orb--b pop" data-pat="flow"><span class="about__orb-i"></span></span>
-    <span class="about__orb about__orb--c pop" data-pat="intersection"><span class="about__orb-i"></span></span>
+  <!-- Три кола-патерни брендбуку скупчені праворуч і виходять за край; патерн інлайнить скрипт, рух (закочування,
+       обертання, відхід) — main.js -->
+  <div class="about__orbs" aria-hidden="true">
+    <span class="about__orb about__orb--a" data-pat="density"><span class="about__orb-i"></span></span>
+    <span class="about__orb about__orb--b" data-pat="flow"><span class="about__orb-i"></span></span>
+    <span class="about__orb about__orb--c" data-pat="intersection"><span class="about__orb-i"></span></span>
   </div>
 </section>
 
