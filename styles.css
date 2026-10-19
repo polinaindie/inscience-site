@@ -148,7 +148,7 @@ main:focus { outline: none; }
 }
 
 /* Лейбл — один рівень на весь сайт: як .ftr__title (Fixel 600, 13px, uppercase), ієрархія — прозорістю */
-.dir__more, .tfoot__count, .newscard .newscard__date, .mcard__meta, .support__label, .req dt, .menu__lang {
+.tfoot__count, .newscard .newscard__date, .mcard__meta, .support__label, .req dt, .menu__lang {
   font-family: var(--f-ui); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
 }
 
@@ -165,6 +165,9 @@ main:focus { outline: none; }
 .btn--ghost-light { color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.7); --fill: #fff; --fill-on: var(--ink); }
 .btn--ink { background: var(--ink); color: #fff; --fill: var(--blue); --fill-on: #fff; }
 .btn--lime { background: var(--lime); color: var(--ink); --fill: #fff; --fill-on: var(--ink); }
+/* компактна кнопка з обводкою всередині картки («Подивитись проєкти», «Детальніше»): обводка currentColor,
+   на hover — коло кольору обводки, текст — кольору тла (--fill / --fill-on задає картка) */
+.btn--line { box-shadow: inset 0 0 0 1.5px currentColor; --fill: var(--ink); --fill-on: var(--paper); --ring: currentColor; }
 
 /* Ховер: коло іншого брендового кольору росте від точки входу курсора (--x/--y ставить скрипт)
    і стягується в точку виходу; фокус з клавіатури — від центру */
@@ -410,17 +413,29 @@ main:focus { outline: none; }
    3. НАПРЯМКИ
    ========================================================== */
 /* заголовок — той самий .h2, що й в інших секціях; під ним — чотири картки з тонкою лінією (28%, радіус 28):
-   угорі ілюстрація з шарів форм брендбуку, унизу назва (як заголовок новини) і кількість проєктів (лейбл) */
+   угорі ілюстрація з шарів форм брендбуку, унизу назва (як заголовок новини) і кнопка з обводкою «Подивитись проєкти» */
 .dirs { padding: 10vh 0 18vh; }
 .dirs__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--dgap); --d0: 360ms; }   /* підписи — слідом за шарами */
 .dir {
-  position: relative; display: flex; flex-direction: column;
+  position: relative; isolation: isolate; display: flex; flex-direction: column;
   padding: clamp(20px, 1.6vw, 28px); border-radius: 28px; text-decoration: none;
   border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
   transition: border-color .4s var(--ease);
 }
+/* Hover / фокус — тло картки м'яко набирає світлий тон кольору напрямку (шар під вмістом, лише opacity), лінія темніє */
+.dir::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: color-mix(in srgb, var(--c) var(--tint, 12%), var(--paper));
+  opacity: 0; transition: opacity .5s var(--ease);
+}
+.dir[data-dir="intersection"] { --tint: 22%; }   /* лайм і рожевий світлі — тон густіший, щоб читався так само */
+.dir[data-dir="grid"] { --tint: 20%; }
 .dir:focus-visible { border-color: currentColor; }
-@media (hover: hover) { .dir:hover { border-color: currentColor; } }
+.dir:focus-visible::before { opacity: 1; }
+@media (hover: hover) {
+  .dir:hover { border-color: currentColor; }
+  .dir:hover::before { opacity: 1; }
+}
 
 /* Ілюстрація (як слайд 1.4 «Multiple ideas»): база → менша форма → форма напрямку; шари складає скрипт.
    Поява — build → combine: шари по черзі виходять, як форми футера, трохи розведені вгору сходинкою,
@@ -440,49 +455,40 @@ main:focus { outline: none; }
 @media (hover: hover) { .dir:hover .dir__layer { transform: translateY(calc(var(--k) * -7px)) rotate(var(--hr)) scale(calc(1 + var(--k) * .025)); } }
 
 .dir__name { font-weight: 500; font-size: clamp(20px, 1.6vw, 26px); line-height: 1.05; text-transform: uppercase; text-wrap: balance; margin-bottom: 14px; }
-.dir__more { margin-top: auto; opacity: .82; }
-.dir__arrow { display: inline-block; transition: transform .3s var(--ease); }
-.dir:focus-visible .dir__arrow { transform: translateY(3px); }   /* ↓ — якір: крок униз */
-@media (hover: hover) { .dir:hover .dir__arrow { transform: translateY(3px); } }
+/* «Подивитись проєкти» — та сама компактна кнопка з обводкою, що й «Детальніше» в проєктах (.btn--line):
+   на власний hover — коло чорнила від точки входу курсора, текст — папір; ↓ — якір: крок униз.
+   Уся картка — посилання: на hover картки стрілка робить крок, на фокусі з клавіатури кнопка ще й заливається від центру */
+.dir__cta { margin-top: auto; }
+.dir:focus-visible .dir__more { color: var(--fill-on); }
+.dir:focus-visible .dir__more::before { scale: 1; }
+.dir:focus-visible .dir__more > span[aria-hidden] { translate: 0 4px; }
+@media (hover: hover) { .dir:hover .dir__more > span[aria-hidden] { translate: 0 4px; } }
 
 /* ==========================================================
    4. ПРОЄКТИ
    ========================================================== */
 .projects { padding: 4vh 0 18vh; }
 
-/* Набір карток сходинками — поведінка карток «How we do it» з litebox.ai, у нашій системі. Картки рядка однакової
-   висоти, кожна наступна вища на --s (зсув — translate, тож місце під сходинки резервують row-gap і padding-bottom).
+/* Сітка по дві картки в ряд (пари — за порядком у розмітці). Картка з цифрами (.pcard--lead) — головна: 7 із 12
+   колонок, поруч менша — 5; пара без головної — 6 + 6. Головні стоять у розмітці то першими, то другими в парі — зигзаг.
+   Картки ряду однакової висоти; ≥ 1100 головна лежить горизонтально (текст і цифри ліворуч, фото праворуч). ≤ 899 — стопка.
    Hover (лише миша) або фокус з клавіатури всередині картки ставлять --h: 1, і з нього рахується все інше:
    поле й текст міняються місцями (0.5 с), форма напрямку вискакує за рамку фото з перельотом (backOut),
-   з-за верхнього краю вилітає друга форма із замахом (anticipate, +0.1 с). Вміст картки стоїть на місці.
-   ≤ 899 — стопка: картка, що йде вгору, трохи відстає, і наступна наїжджає на неї (main.js, скрол-цикл) */
+   з-за верхнього краю вилітає друга форма із замахом (anticipate, +0.1 с). Вміст картки стоїть на місці */
 @property --bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
 @property --fg { syntax: '<color>'; inherits: true; initial-value: #000; }
 .pgrid {
-  --cols: 1; --s: 0px; --gap: 28px;
-  --steps: calc(var(--cols) - 1);
+  --gap: 28px;
   --ease-back: cubic-bezier(.175, .885, .32, 1.275);   /* backOut (framer-motion) */
   --ease-anti: cubic-bezier(.55, -.45, .3, 1);          /* anticipate: замах назад, потім виліт */
-  display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  column-gap: var(--gap); row-gap: calc(var(--steps) * var(--s) + var(--gap));
-  padding-bottom: calc(var(--steps) * var(--s));
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap);
 }
 @media (min-width: 900px) {
-  .pgrid { --cols: 2; --s: clamp(48px, 5.5vw, 96px); }
-  .pcard:nth-child(2n+2) { --col: 1; }
-}
-@media (min-width: 1181px) {
-  .pgrid { --cols: 3; }
-  .pcard:nth-child(3n+1) { --col: 0; }
-  .pcard:nth-child(3n+2) { --col: 1; }
-  .pcard:nth-child(3n+3) { --col: 2; }
-}
-@media (min-width: 1760px) {
-  .pgrid { --cols: 4; --s: clamp(56px, 3.6vw, 80px); }
-  .pcard:nth-child(4n+1) { --col: 0; }
-  .pcard:nth-child(4n+2) { --col: 1; }
-  .pcard:nth-child(4n+3) { --col: 2; }
-  .pcard:nth-child(4n+4) { --col: 3; }
+  .pgrid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .pcard { grid-column: span 6; }
+  .pcard--lead { grid-column: span 7; }
+  .pcard--lead:nth-child(odd) + .pcard, .pcard:nth-child(odd):has(+ .pcard--lead) { grid-column: span 5; }
+  .pcard:nth-child(even) { --col: 1; }   /* друга в парі зʼявляється слідом */
 }
 .pgrid__foot { margin-top: clamp(28px, 5vh, 56px); }
 
@@ -529,12 +535,11 @@ main:focus { outline: none; }
   position: relative; display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: clamp(20px, 2.6vh, 28px);
   padding: clamp(22px, 2vw, 36px); border-radius: 28px;
   background: var(--bg); color: var(--fg);
-  translate: 0 calc((var(--steps) - var(--col)) * var(--s));
   transition: --bg .5s ease-in-out, --fg .5s ease-in-out;
 }
 .pcard:has(:focus-visible) { --h: 1; }
 @media (hover: hover) { .pcard:hover { --h: 1; } }
-/* поява — як форми футера, зліва направо по сходинках; форма біля фото — слідом за своєю карткою */
+/* поява — як форми футера, у парі зліва направо; форма біля фото — слідом за своєю карткою */
 .js .pcard.reveal:not(.in) { opacity: 0; }
 .pcard.reveal.in { animation: ftr-shape-in 1.1s var(--ease-out) both; animation-delay: calc(var(--col) * 140ms); }
 .reveal.in .pcard__shape { animation-delay: calc(var(--col) * 140ms + 320ms); }
@@ -571,24 +576,34 @@ main:focus { outline: none; }
 .pcard__fig-ico { position: relative; width: 30%; height: 30%; margin-top: -6%; }
 .pcard__fig--disc svg, .pcard__fig-ico { rotate: calc(var(--h) * -12deg); transition: rotate .6s var(--ease-back); }
 /* Друга форма: у спокої схована за верхнім краєм (мала, повернута), на hover / фокусі вилітає над карткою
-   і лягає на її верхній край. Масштаб — третина картки, як форми футера */
+   і лягає центром на її верхній край — у щільній сітці лише зачіпає нижнє поле картки над нею (не її кнопку).
+   Масштаб — третина малої картки, як форми футера */
 .pcard__pop {
   position: absolute; z-index: 2; top: 0; left: 62%; width: 36%; height: auto; aspect-ratio: 1;
   color: var(--c); pointer-events: none; overflow: visible;
   opacity: var(--h);
-  translate: calc(-40% - var(--h) * 10%) calc(-30% - var(--h) * 42%);
+  translate: calc(-40% - var(--h) * 10%) calc(-30% - var(--h) * 22%);
   scale: calc(.3 + var(--h) * .7); rotate: calc(-45deg + var(--h) * 125deg);
   transition: opacity .3s ease-in-out .1s, translate .8s var(--ease-anti) .1s, scale .8s var(--ease-anti) .1s, rotate .8s var(--ease-anti) .1s;
 }
 
-/* Кнопка «Детальніше»: фон — колір тексту картки, текст кнопки — лише чорний або білий (міняються разом із полем).
-   :where — щоб власний hover кнопки (.btn:hover) лишався сильнішим */
-.pcard__more {
-  flex: none; align-self: flex-start; margin-top: auto; background: var(--fg);
-  color: color-mix(in srgb, #fff calc(var(--h) * 100%), var(--ink));
-  --fill: var(--lime); --fill-on: var(--ink); --ring: var(--fg);
+/* Головна картка (з цифрами) ≥ 1100 — горизонтально: текст і цифри ліворуч, фото праворуч на ≈ 38% ширини
+   (вужче текстова колонка не вміщує цифри по дві). Друга форма — та сама за розміром, що й на менших картках */
+@media (min-width: 1100px) {
+  .pcard--lead { flex-direction: row; align-items: stretch; gap: clamp(24px, 2.4vw, 44px); }
+  .pcard--lead .pcard__media { flex: 0 0 38%; height: auto; }
+  .pcard--lead .pcard__frame { width: 100%; height: auto; }
+  .pcard--lead .pcard__title { font-size: clamp(30px, 2.8vw, 52px); }
+  .pcard--lead .pcard__pop { width: 26%; left: 74%; }
 }
-:where(.pcard--ink) .pcard__more { --fill: #fff; color: color-mix(in srgb, var(--ink) calc(var(--h) * 100%), #fff); }
+
+/* Кнопка «Детальніше» — одна на всіх картках: компактна, з обводкою кольору тексту картки (.btn--line).
+   Hover — коло кольору тексту картки, текст кнопки — кольору поля; поле й текст міняються місцями разом із карткою,
+   тож кнопка контрастна на кожному полі й у кожному стані */
+.pcard__more {
+  flex: none; align-self: flex-start; margin-top: auto;
+  color: var(--fg); --fill: var(--fg); --fill-on: var(--bg); --ring: var(--fg);
+}
 
 .pcard__title { font-weight: 500; font-size: clamp(26px, 2.3vw, 44px); line-height: .92; text-transform: uppercase; margin-bottom: clamp(12px, 1.8vh, 18px); }
 @media (max-width: 1180px) { .pcard__title { font-size: clamp(30px, 3.4vw, 40px); } }   /* дві колонки й стопка: картка ширша (≤ 760 — 34px, нижче) */
@@ -909,12 +924,13 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
 @media (max-width: 700px) {
   .dirs__grid { grid-template-columns: 1fr; gap: 12px; }
   .dir {
-    display: grid; grid-template-columns: 42% 1fr; grid-template-rows: 1fr auto auto 1fr;
-    column-gap: 18px; padding: 18px 20px 18px 14px;
+    display: grid; grid-template-columns: 42% 1fr; grid-template-rows: 1fr auto 1fr auto;
+    column-gap: 18px; padding: 18px 20px 20px 14px;
   }
-  .dir__art { grid-row: 1 / -1; width: 100%; margin: 0; align-self: center; }
-  .dir__name { grid-row: 2; grid-column: 2; margin-bottom: 10px; font-size: 19px; hyphens: manual; }
-  .dir__more { grid-row: 3; grid-column: 2; justify-self: start; margin-top: 0; }
+  .dir__art { grid-row: 1 / 4; width: 100%; margin: 0; align-self: center; }
+  .dir__name { grid-row: 2; grid-column: 2; font-size: 19px; hyphens: manual; margin: 0; }
+  /* кнопка не влазить у колонку поруч з ілюстрацією — окремим рядком під усією карткою */
+  .dir__cta { grid-row: 4; grid-column: 1 / -1; justify-self: start; margin: 14px 0 0 6px; }
 }
 
 /* ---------- Менше руху ---------- */

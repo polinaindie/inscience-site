@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=31">
+  <link rel="stylesheet" href="styles.css?v=32">
   <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
   <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -124,28 +124,28 @@
       <h2 class="h2 reveal" data-ln>Одна мета.<br>Чотири <br class="br-m">напрямки</h2>
     </div>
 
-    <!-- посилання веде до першої картки свого напрямку в колоді (скрипт); без JS — до «Проєктів».
-         Ілюстрацію з шарів форм брендбуку (.dir__art) складає скрипт -->
+    <!-- посилання веде до першої картки свого напрямку в проєктах (скрипт); без JS — до «Проєктів».
+         Ілюстрацію з шарів форм брендбуку (.dir__art) складає скрипт. «Подивитись проєкти» — UI-мікрокопі, потрібне погодження -->
     <div class="dirs__grid reveal">
       <a class="dir" href="#projects" data-dir="flow" style="--c:var(--blue);--i:0">
         <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Популяризація науки для дітей і дорослих</span>
-        <span class="dir__more" data-ln><span data-count>4 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
+        <span class="dir__cta" data-ln><span class="btn btn--sm btn--line dir__more">Подивитись проєкти <span aria-hidden="true">↓</span></span></span>
       </a>
       <a class="dir" href="#projects" data-dir="intersection" style="--c:var(--lime);--i:1">
         <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Гендерна рівність у&nbsp;STEM</span>
-        <span class="dir__more" data-ln><span data-count>1 проєкт</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
+        <span class="dir__cta" data-ln><span class="btn btn--sm btn--line dir__more">Подивитись проєкти <span aria-hidden="true">↓</span></span></span>
       </a>
       <a class="dir" href="#projects" data-dir="grid" style="--c:var(--pink);--i:2">
         <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Співпраця науки, бізнесу та держави</span>
-        <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
+        <span class="dir__cta" data-ln><span class="btn btn--sm btn--line dir__more">Подивитись проєкти <span aria-hidden="true">↓</span></span></span>
       </a>
       <a class="dir" href="#projects" data-dir="density" style="--c:var(--purple);--i:3">
         <span class="dir__art" aria-hidden="true"></span>
         <span class="dir__name" data-ln>Здоровʼя через доказову профілактику</span>
-        <span class="dir__more" data-ln><span data-count>2 проєкти</span> <span class="dir__arrow" aria-hidden="true">↓</span></span>
+        <span class="dir__cta" data-ln><span class="btn btn--sm btn--line dir__more">Подивитись проєкти <span aria-hidden="true">↓</span></span></span>
       </a>
     </div>
   </div>
@@ -153,7 +153,8 @@
 
 <!-- ============ 4. ПРОЄКТИ ============ -->
 <section class="projects" id="projects" data-theme="light">
-  <!-- Набір карток сходинками: кожна наступна в ряду вища. Hover / фокус — поле й текст картки міняються місцями,
+  <!-- Сітка по дві картки в ряд: картки з цифрами (.pcard--lead) — головні, ширші, ідуть зигзагом (ліворуч / праворуч);
+       решта — менші. Hover / фокус — поле й текст картки міняються місцями,
        форма напрямку вискакує за рамку фото, з-за верхнього краю вилітає друга форма.
        «Детальніше» на картках — UI-мікрокопі, потрібне погодження -->
   <div class="wrap">
@@ -161,7 +162,7 @@
       <h2 class="h2 reveal" data-ln>Наші проєкти</h2>
     </div>
     <div class="pgrid">
-      <article class="reveal pcard pcard--flag" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
+      <article class="reveal pcard pcard--lead pcard--flag" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">INSCIENCE Conference</h3>
           <p class="pcard__desc">Найбільша науково-популярна та deep tech конференція в Україні. Пʼята конференція відбулася 13–14 червня 2026 року в Києві.</p>
@@ -171,7 +172,7 @@
             <div><dt>15+</dt><dd>країн</dd></div>
             <div><dt>60+</dt><dd>стартапів і розробок</dd></div>
           </dl>
-          <a href="#" class="btn btn--sm pcard__more">Про конференцію <span aria-hidden="true">→</span></a>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Про конференцію <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
@@ -181,25 +182,11 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--pink)"><use href="#i-burst"/></svg>
       </article>
-      <article class="reveal pcard pcard--ink" data-dirs="intersection" style="--c:var(--coral);--on:var(--ink)">
-        <div class="pcard__text">
-          <h3 class="pcard__title">Women Led Science</h3>
-          <p class="pcard__desc">До $10 000 на дослідження для команд під керівництвом жінок.</p>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про Women Led Science</span> <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="pcard__media">
-          <div class="pcard__frame">
-            <img class="pcard__photo mask-star" src="assets/photos/scientist2.jpg" alt="Дослідниця в захисних окулярах">
-            <svg class="pop pcard__shape pcard__shape--t" aria-hidden="true" style="--c:var(--lime);--at:68%"><use href="#i-flower"/></svg>
-          </div>
-        </div>
-        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--blue)"><use href="#i-clover"/></svg>
-      </article>
       <article class="reveal pcard" data-dirs="density" style="--c:var(--green);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">Медіа «Бережи себе»</h3>
           <p class="pcard__desc">Платформа доказової інформації про здоровʼя: гайди разом із МОЗ і два подкасти.</p>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про Медіа «Бережи себе»</span> <span aria-hidden="true">→</span></a>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про Медіа «Бережи себе»</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
@@ -209,7 +196,21 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--lime)"><use href="#i-star"/></svg>
       </article>
-      <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--lime);--on:var(--ink)">
+      <article class="reveal pcard" data-dirs="intersection" style="--c:var(--coral);--on:var(--ink)">
+        <div class="pcard__text">
+          <h3 class="pcard__title">Women Led Science</h3>
+          <p class="pcard__desc">До $10 000 на дослідження для команд під керівництвом жінок.</p>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про Women Led Science</span> <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="pcard__media">
+          <div class="pcard__frame">
+            <img class="pcard__photo mask-star" src="assets/photos/scientist2.jpg" alt="Дослідниця в захисних окулярах">
+            <svg class="pop pcard__shape pcard__shape--t" aria-hidden="true" style="--c:var(--lime);--at:68%"><use href="#i-flower"/></svg>
+          </div>
+        </div>
+        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--pink)"><use href="#i-clover"/></svg>
+      </article>
+      <article class="reveal pcard pcard--lead" data-dirs="flow" style="--c:var(--lime);--on:var(--ink)">
         <div class="pcard__text">
           <h3 class="pcard__title">Science Kids</h3>
           <p class="pcard__desc">STEAM-події для дітей у Харкові, Миколаєві, Запоріжжі, Херсоні та Одесі, а також для дітей ветеранів у Києві.</p>
@@ -219,7 +220,7 @@
             <div><dt>11</dt><dd>проведених онлайн-сезонів</dd></div>
             <div><dt>3 000</dt><dd>залучених дітей</dd></div>
           </dl>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про Science Kids</span> <span aria-hidden="true">→</span></a>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про Science Kids</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
@@ -227,13 +228,31 @@
             <svg class="pop pcard__shape pcard__shape--b" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:32%;--o:40%"><use href="#i-eye"/></svg>
           </div>
         </div>
-        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--hotpink)"><use href="#i-burst"/></svg>
+        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--blue)"><use href="#i-burst"/></svg>
+      </article>
+      <article class="reveal pcard pcard--lead" data-dirs="flow" style="--c:var(--pink);--on:var(--ink)">
+        <div class="pcard__text">
+          <h3 class="pcard__title">Science Teens</h3>
+          <p class="pcard__desc">Профорієнтаційні зустрічі підлітків із науковцями та науковицями, за підтримки МОН.</p>
+          <dl class="pcard__stats">
+            <div><dt>2 820</dt><dd>підлітків долучилися до проєкту</dd></div>
+            <div><dt>648</dt><dd>підлітків пройшли профорієнтаційний тест</dd></div>
+          </dl>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про Science Teens</span> <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="pcard__media">
+          <div class="pcard__frame">
+            <img class="pcard__photo mask-circle" src="assets/photos/team.jpg" alt="Учасники Science Teens біля конференції">
+            <svg class="pop pcard__shape pcard__shape--b" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:30%;--o:40%"><use href="#i-eye"/></svg>
+          </div>
+        </div>
+        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--pink)"><use href="#i-star"/></svg>
       </article>
       <article class="reveal pcard" data-dirs="density" style="--c:var(--maroon);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">Осередки здоровʼя</h3>
           <p class="pcard__desc">Безоплатні зустрічі з лікарями про профілактику серцево-судинних захворювань.</p>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про Осередки здоровʼя</span> <span aria-hidden="true">→</span></a>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про Осередки здоровʼя</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
@@ -244,27 +263,13 @@
             <svg class="pop pcard__shape pcard__shape--t" aria-hidden="true" style="--c:var(--purple);--at:26%"><use href="#i-heart"/></svg>
           </div>
         </div>
-        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--pink)"><use href="#i-hash"/></svg>
-      </article>
-      <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--hotpink);--on:var(--ink)">
-        <div class="pcard__text">
-          <h3 class="pcard__title">STEM-освіта для дітей</h3>
-          <p class="pcard__desc">Безплатний курс із 12 вебінарів для освітян; з 2025 року — навчання вчителів у 10 громадах.</p>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про STEM-освіта для дітей</span> <span aria-hidden="true">→</span></a>
-        </div>
-        <div class="pcard__media">
-          <div class="pcard__frame">
-            <img class="pcard__photo mask-hash" src="assets/photos/scientist.jpg" alt="Науковиця біля мікроскопа">
-            <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:72%"><use href="#i-eye"/></svg>
-          </div>
-        </div>
-        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--lime)"><use href="#i-clover"/></svg>
+        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--coral)"><use href="#i-hash"/></svg>
       </article>
       <article class="reveal pcard" data-dirs="grid" style="--c:var(--purple);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">INSCIENCE Business</h3>
           <p class="pcard__desc">Допомагає науковцям і бізнесу разом створювати наукоємні технології.</p>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про INSCIENCE Business</span> <span aria-hidden="true">→</span></a>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про INSCIENCE Business</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
@@ -274,23 +279,19 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--lime)"><use href="#i-star"/></svg>
       </article>
-      <article class="reveal pcard pcard--ink" data-dirs="flow" style="--c:var(--pink);--on:var(--ink)">
+      <article class="reveal pcard" data-dirs="flow" style="--c:var(--hotpink);--on:var(--ink)">
         <div class="pcard__text">
-          <h3 class="pcard__title">Science Teens</h3>
-          <p class="pcard__desc">Профорієнтаційні зустрічі підлітків із науковцями та науковицями, за підтримки МОН.</p>
-          <dl class="pcard__stats">
-            <div><dt>2 820</dt><dd>підлітків долучилися до проєкту</dd></div>
-            <div><dt>648</dt><dd>підлітків пройшли профорієнтаційний тест</dd></div>
-          </dl>
-          <a href="#" class="btn btn--sm pcard__more">Детальніше<span class="sr-only"> про Science Teens</span> <span aria-hidden="true">→</span></a>
+          <h3 class="pcard__title">STEM-освіта для дітей</h3>
+          <p class="pcard__desc">Безплатний курс із 12 вебінарів для освітян; з 2025 року — навчання вчителів у 10 громадах.</p>
+          <a href="#" class="btn btn--sm btn--line pcard__more">Детальніше<span class="sr-only"> про STEM-освіта для дітей</span> <span aria-hidden="true">→</span></a>
         </div>
         <div class="pcard__media">
           <div class="pcard__frame">
-            <img class="pcard__photo mask-circle" src="assets/photos/team.jpg" alt="Учасники Science Teens біля конференції">
-            <svg class="pop pcard__shape pcard__shape--b" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:30%;--o:40%"><use href="#i-eye"/></svg>
+            <img class="pcard__photo mask-hash" src="assets/photos/scientist.jpg" alt="Науковиця біля мікроскопа">
+            <svg class="pop pcard__shape pcard__shape--r" aria-hidden="true" style="--c:var(--blue);--s:29%;--at:72%"><use href="#i-eye"/></svg>
           </div>
         </div>
-        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--coral)"><use href="#i-star"/></svg>
+        <svg class="pcard__pop" aria-hidden="true" style="--c:var(--lime)"><use href="#i-clover"/></svg>
       </article>
     </div>
     <div class="tfoot pgrid__foot">
@@ -537,6 +538,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=31"></script>
+<script src="main.js?v=32"></script>
 </body>
 </html>
