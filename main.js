@@ -329,135 +329,29 @@
     patternsReady.then(() => { dirsReady = true; firstPlay(); });
   }
 
-  // Колода проєктів: на десктопі сцена закріплюється, скрол гортає картки, як спікер — картки свого виступу.
-  // Поточна стоїть у слоті, наступні чекають у ряд праворуч (клік по видимій — гортаємо до неї); заїжджаючи,
-  // картка лягає поверх попередньої, а пройдені складаються під нею в стопку по центру (трохи менші, з легким нахилом).
-  const deck = $('.pdeck');
-  const deckStage = $('.pdeck__stage', deck);
-  const ptrack = $('.ptrack', deck);
-  const deckNum = $('.pdeck__count b', deck);
-  const deckTotal = $('.pdeck__total', deck);
-  const deckBtns = $$('.pdeck__btn', deck);
-  const deckLive = $('.pdeck__live', deck);   // позиція колоди для скрінрідера — h3 поточної картки
-  const deckMQ = matchMedia('(min-width: 900px) and (min-height: 600px)');
-  const DECK_STEP = .75;   // висоти екрана скролу на одну картку
-  let deckOn = false, deckCards = [], deckW = 0, deckRaw = -1, deckIdx = 0, deckStick = 0;
-  cards.forEach(c => { c._over = $('.pcard__over', c); });
-  const pad2 = n => String(n).padStart(2, '0');
-  const deckTop = () => scrollY + deck.getBoundingClientRect().top - deckStick;   // скрол, з якого сцена закріплена
-  const deckRun = () => deck.offsetHeight - deckStage.offsetHeight;
-  function layoutDeck() {
-    deckOn = !reduce && deckMQ.matches;
-    deck.classList.toggle('is-pinned', deckOn);
-    deckCards = cards;
-    deckTotal.textContent = pad2(deckCards.length);
-    cards.forEach(c => { c.style.transform = ''; c.style.zIndex = ''; c.style.opacity = ''; c._over.style.transform = ''; c.classList.remove('is-back'); });
-    deck.style.height = '';
-    deckStick = parseFloat(getComputedStyle(deckStage).top) || 0;   // = --hdr, сцена стоїть під хедером
-    if (deckOn) {
-      deckW = (deckCards[0]?.offsetWidth || 0) + (parseFloat(getComputedStyle(deck).getPropertyValue('--gap')) || 28);
-      deck.style.height = `${deckStage.offsetHeight + Math.max(0, deckCards.length - 1) * innerHeight * DECK_STEP}px`;
-    }
-    deckRaw = -1;
-  }
-  let deckSaid = -1;
-  function setDeckIdx(i) {
-    // оголошуємо лише зміну (не початковий стан)
-    if (deckSaid >= 0 && i !== deckSaid) deckLive.textContent = $('.pcard__title', deckCards[i]).textContent;
-    // верхня картка: форма її напрямку виходить за рамку фото
-    if (i !== deckSaid) deckCards.forEach((c, k) => c.classList.toggle('is-top', k === i));
-    deckSaid = i;
-    deckIdx = i;
-    deckNum.textContent = pad2(i + 1);
-    deckBtns[0].disabled = i <= 0;
-    deckBtns[1].disabled = i >= deckCards.length - 1;
-  }
-  function renderDeck(force) {
-    const n = deckCards.length;
-    if (!deckOn) {
-      // нативний ряд: номер — за найближчою до лівого краю карткою
-      const step = deckCards[1] ? deckCards[1].offsetLeft - deckCards[0].offsetLeft : 1;
-      const k = n > 1 ? clamp(ptrack.scrollLeft / (step * (n - 1))) : 0;
-      setDeckIdx(Math.round(k * (n - 1)));
-      return;
-    }
-    const raw = n > 1 ? clamp((deckStick - deck.getBoundingClientRect().top) / deckRun()) : 0;
-    if (raw === deckRaw && !force) return;
-    deckRaw = raw;
-    const t = raw * (n - 1), i = Math.min(Math.floor(t), n - 2), fr = t - Math.max(i, 0);
-    const p = n > 1 ? Math.max(i, 0) + ease(range(fr, .14, .86)) : 0;   // плато: картка трохи стоїть, перш ніж її перегорнуть
-    const room = ptrack.clientWidth;
-    deckCards.forEach((c, k) => {
-      const d = k - p;
-      let x, s = 1, rot = 0, o = 1;
-      if (d >= 0) x = d * deckW;
-      else {
-        const e = Math.min(-d, 3);
-        x = 0; s = 1 - e * .03; o = 1 - range(-d, 2.4, 3.2);   // стопка по центру: краї видно з обох боків
-        rot = (k % 2 ? 1.6 : -2.2) * Math.min(-d, 1) + (k % 3 - 1) * .6 * range(-d, 1, 2);
-      }
-      c.style.zIndex = k + 1;
-      c.style.opacity = o < 1 ? o.toFixed(3) : '';
-      c.style.transform = `translate3d(${x.toFixed(1)}px,0,0) rotate(${rot.toFixed(2)}deg) scale(${s.toFixed(4)})`;
-      // фото трохи запізнюється за карткою, що заїжджає
-      c._over.style.transform = d > 0 && d < 1.6 ? `translate3d(${(Math.min(d, 1) * 90).toFixed(1)}px,0,0)` : '';
-      // наступна, що виглядає справа, — клікабельна
-      c.classList.toggle('is-back', d > .5 && c.offsetLeft + x < room);
-    });
-    setDeckIdx(Math.round(p));
-  }
-  // Позиція скролу, на якій картка i лежить у слоті
-  const deckY = i => deckTop() + (deckCards.length > 1 ? i / (deckCards.length - 1) : 0) * deckRun();
-  // Перехід до картки i: на десктопі — скрол до її місця в колоді, у нативному ряду — до секції й картки в ряду.
-  // here — перехід зсередини колоди (←/→): сторінка й фокус лишаються на місці
-  const goToCard = (i, here) => {
-    const behavior = reduce ? 'auto' : 'smooth', c = deckCards[i];
-    revealNow($('#projects'));
-    if (deckOn) scrollTo({ top: deckY(i), behavior });
-    else {
-      if (!here) $('#projects').scrollIntoView({ behavior });
-      ptrack.scrollTo({ left: c.offsetLeft - deckCards[0].offsetLeft, behavior });
-    }
-    if (!here) $('.pcard__more', c)?.focus({ preventScroll: true });   // наступний Tab — з цієї картки
-  };
-  deckBtns.forEach(b => b.addEventListener('click', () => goToCard(clamp(deckIdx + +b.dataset.step, 0, deckCards.length - 1), true)));
+  /* ---------- 6. Проєкти: картки сходинками ---------- */
+  // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
+  const pgrid = $('.pgrid');
+  const pad2 = n => String(n).padStart(2, '0');   // лічильники «01 / 06» (новини)
   // Форма напрямку біля фото (003 Overlap): велика, плоска, у кодовому кольорі (розмітка); рамка рівної площі —
   // пропорції зі спрайта, щоб широке око не важило більше за серце
-  spriteReady.then(() => $$('.pcard__shape', deck).forEach(el => {
+  spriteReady.then(() => $$('.pcard__shape', pgrid).forEach(el => {
     const vb = document.getElementById($('use', el).getAttribute('href').slice(1))?.getAttribute('viewBox')?.split(/[\s,]+/).map(Number);
     if (vb) el.style.setProperty('--sq', Math.sqrt(vb[2] / vb[3]).toFixed(3));
   }));
-  // Напрямок веде до своєї першої картки (data-dirs); без JS — до «Проєктів»
+  // Напрямок веде до своєї першої картки (data-dirs); без JS — до «Проєктів».
+  // Фокус — на кнопку картки: наступний Tab іде звідти, а з клавіатури картка одразу «відкрита» (:focus-visible)
   dirEls.forEach(d => d.addEventListener('click', e => {
-    const i = deckCards.findIndex(c => c.dataset.dirs.split(' ').includes(d.dataset.dir));
-    if (i < 0) return;
+    const c = cards.find(c => c.dataset.dirs.split(' ').includes(d.dataset.dir));
+    if (!c) return;
     e.preventDefault();
-    goToCard(i);
+    revealNow($('#projects'));
+    c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    $('.pcard__more', c)?.focus({ preventScroll: true });
   }));
-  // Клавіатура: фокус на картці за кадром — догортаємо до неї
-  ptrack.addEventListener('focusin', e => {
-    const c = e.target.closest('.pcard');
-    if (!deckOn || !c) return;
-    ptrack.scrollLeft = 0;
-    scrollTo({ top: deckY(deckCards.indexOf(c)), behavior: 'smooth' });
-  });
-  // Клік по краю картки позаду — гортаємо до неї
-  ptrack.addEventListener('click', e => {
-    const c = e.target.closest('.pcard.is-back');
-    if (!deckOn || !c) return;
-    e.preventDefault();
-    scrollTo({ top: deckY(deckCards.indexOf(c)), behavior: 'smooth' });
-  });
-  ptrack.addEventListener('scroll', () => { if (!deckOn) renderDeck(); }, { passive: true });
-  deckMQ.addEventListener('change', () => { layoutDeck(); renderDeck(true); });
-  layoutDeck();
-  renderDeck(true);
-
-  let rzP;
-  addEventListener('resize', () => { clearTimeout(rzP); rzP = setTimeout(() => { layoutDeck(); renderDeck(true); }, 150); });
 
 
-  /* ---------- 7. Скрол-цикл: hero-картотека, колода, «Підтримати», тема хедера ---------- */
+  /* ---------- 7. Скрол-цикл: hero-картотека, «Підтримати», тема хедера ---------- */
   const hero = $('.hero');
   const heroContent = $('.hero__content');
   const heroSticky = $('.hero__sticky');
@@ -545,10 +439,6 @@
     const hp = reduce ? 0 : progress(hero);
     heroHp = hp;
     heroLensScroll(hp);
-
-    // ПРОЄКТИ: колода
-    if (deckOn) renderDeck();
-
 
     // ПІДТРИМКА
     const sr = support.getBoundingClientRect();
