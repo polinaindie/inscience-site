@@ -77,14 +77,17 @@ main:focus { outline: none; }
 .skip:focus-visible { transform: none; --ring: var(--ink); }
 
 /* ---------- Typography ---------- */
-.h2 {
+/* заголовки блоків — Recht 400 (500 для них заважкий, клієнтка 19.10.2026) */
+.h2, .h3 {
   font-family: var(--f-head);
-  font-weight: 500;
+  font-weight: 400;
   text-transform: uppercase;
   font-size: clamp(46px, 7.2vw, 112px);
   line-height: .88;
   letter-spacing: -.01em;
 }
+/* третій рівень — для службових блоків («Разом з нами») */
+.h3 { font-size: clamp(32px, 3.6vw, 56px); line-height: .92; }
 /* Без кольорових слів: акценти в заголовках і тексті (.about__acc, .support__acc тощо) — кольору свого тексту */
 :is(h1, h2, h3, p, .h2, .lead) :is(em, strong, b) { color: inherit; }
 /* і без жирності чи курсиву: акцентне слово заголовка («людям», «видимою», «разом») — тієї ж ваги, що й рядок.
@@ -455,23 +458,21 @@ main:focus { outline: none; }
 @media (hover: hover) { .dir:hover .dir__layer { transform: translateY(calc(var(--k) * -7px)) rotate(var(--hr)) scale(calc(1 + var(--k) * .025)); } }
 
 .dir__name { font-weight: 500; font-size: clamp(20px, 1.6vw, 26px); line-height: 1.05; text-transform: uppercase; text-wrap: balance; margin-bottom: 14px; }
-/* «Подивитись проєкти» — та сама компактна кнопка з обводкою, що й «Детальніше» в проєктах (.btn--line):
-   на власний hover — коло чорнила від точки входу курсора, текст — папір; ↓ — якір: крок униз.
-   Уся картка — посилання: на hover картки стрілка робить крок, на фокусі з клавіатури кнопка ще й заливається від центру */
+/* «Подивитись проєкти» — кнопка з обводкою (.btn--line) базового розміру, без стрілки:
+   на власний hover — коло чорнила від точки входу курсора, текст — папір.
+   Уся картка — посилання: на фокусі з клавіатури кнопка заливається від центру */
 .dir__cta { margin-top: auto; }
 .dir:focus-visible .dir__more { color: var(--fill-on); }
 .dir:focus-visible .dir__more::before { scale: 1; }
-.dir:focus-visible .dir__more > span[aria-hidden] { translate: 0 4px; }
-@media (hover: hover) { .dir:hover .dir__more > span[aria-hidden] { translate: 0 4px; } }
 
 /* ==========================================================
    4. ПРОЄКТИ
    ========================================================== */
 .projects { padding: 4vh 0 18vh; }
 
-/* Сітка по дві картки в ряд (пари — за порядком у розмітці). Картка з цифрами (.pcard--lead) — головна: 7 із 12
-   колонок, поруч менша — 5; пара без головної — 6 + 6. Головні стоять у розмітці то першими, то другими в парі — зигзаг.
-   Картки ряду однакової висоти; ≥ 1100 головна лежить горизонтально (текст і цифри ліворуч, фото праворуч). ≤ 899 — стопка.
+/* Слайдер карток (той самий .track, що в новинах): у кадрі дві картки. Картка з цифрами (.pcard--lead) — головна:
+   7/12 ширини кадру, решта — 5/12; ≥ 1100 головна лежить горизонтально (текст і цифри ліворуч, фото праворуч).
+   ≤ 899 — одна картка в кадрі й край наступної. Картки однакової висоти.
    Hover (лише миша) або фокус з клавіатури всередині картки ставлять --h: 1, і з нього рахується все інше:
    поле й текст міняються місцями (0.5 с), форма напрямку вискакує за рамку фото з перельотом (backOut),
    з-за верхнього краю вилітає друга форма із замахом (anticipate, +0.1 с). Вміст картки стоїть на місці */
@@ -481,14 +482,15 @@ main:focus { outline: none; }
   --gap: 28px;
   --ease-back: cubic-bezier(.175, .885, .32, 1.275);   /* backOut (framer-motion) */
   --ease-anti: cubic-bezier(.55, -.45, .3, 1);          /* anticipate: замах назад, потім виліт */
-  display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap);
 }
+/* поверх правил .track: флекс замість грід-колонок і запас зверху під другу форму, що вилітає над карткою
+   (трек обрізає все, що за ним) */
+.track.pgrid { display: flex; gap: var(--gap); padding-top: 150px; margin-top: -140px; }
+.pgrid > .pcard { flex: 0 0 86%; }
 @media (min-width: 900px) {
-  .pgrid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .pcard { grid-column: span 6; }
-  .pcard--lead { grid-column: span 7; }
-  .pcard--lead:nth-child(odd) + .pcard, .pcard:nth-child(odd):has(+ .pcard--lead) { grid-column: span 5; }
-  .pcard:nth-child(even) { --col: 1; }   /* друга в парі зʼявляється слідом */
+  .pgrid > .pcard { flex-basis: calc((100% - var(--gap)) * 5 / 12); }
+  .pgrid > .pcard--lead { flex-basis: calc((100% - var(--gap)) * 7 / 12); }
+  .pcard:nth-child(2) { --col: 1; }   /* друга в кадрі зʼявляється слідом */
 }
 .pgrid__foot { margin-top: clamp(28px, 5vh, 56px); }
 
@@ -737,15 +739,14 @@ main:focus { outline: none; }
 /* ==========================================================
    8. ПАРТНЕРИ — тікер логотипів
    ========================================================== */
-.partners { padding: 14vh 0 18vh; }
-.partners .sec-head { margin-bottom: 56px; }
-/* «Підтримати» наїжджає на партнерів тим самим жестом, що лайм на новини (див. розділ 6): партнери — екран, як hero,
-   заголовок і стрічка посередині; вони стоять, синє коло «Підтримати» заходить поверх. Reduced motion — звичайний стик */
+.partners { padding: 9vh 0 10vh; }
+.partners .sec-head { margin-bottom: 40px; }
+/* «Підтримати» наїжджає на партнерів тим самим жестом, що лайм на новини (див. розділ 6): партнери дійшли низом
+   до краю екрана й стоять, синя «Підтримати» заходить поверх рівним краєм. Reduced motion — звичайний стик */
 .has-stack .partners { padding: 0; }
 .has-stack .partners__pin {
   position: sticky; top: calc(100vh - var(--wh, 100vh)); top: calc(100svh - var(--wh, 100svh));
-  min-height: 100vh; min-height: 100svh; padding: calc(var(--hdr) + 4vh) 0 6vh;
-  display: flex; flex-direction: column; justify-content: center;
+  padding: 9vh 0 10vh;
 }
 .partners__pin > .wrap { width: 100%; }
 .has-stack .partners::after { content: ""; display: block; height: var(--o); }
@@ -774,9 +775,9 @@ main:focus { outline: none; }
 /* ==========================================================
    9. ЯК ПІДТРИМАТИ — повернення до синього
    ========================================================== */
-/* коло не обрізається верхнім краєм секції: шари заходять на 100vh вгору, поверх «Партнерів» */
-.support { position: relative; padding: 22vh 0 16vh; color: #fff; overflow-x: clip; --up: 100vh; }
-.support__bg { position: absolute; inset: calc(-1 * var(--up)) 0 0; background: var(--blue); clip-path: circle(0px at 50% 35%); will-change: clip-path; }
+/* синє поле з рівним краєм — без кола, наїжджає на «Партнерів» (розділ 8) */
+.support { position: relative; padding: 22vh 0 16vh; color: #fff; overflow-x: clip; }
+.support__bg { position: absolute; inset: 0; background: var(--blue); }
 .support__inner { position: relative; display: flex; flex-direction: column; gap: 56px; }
 /* текст не скрабимо: заголовок і лід — рядками з маски, реквізити — слідом, один раз (тригер .in ставить скрипт) */
 .js .support__req { opacity: 0; transform: translateY(32px); transition: opacity .6s var(--ease-out) .3s, transform .8s var(--ease-out) .3s; }
@@ -939,7 +940,7 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; transition-delay: 0s !important; }
   .hero { height: 100vh; height: 100svh; }
   .hero__lens { display: none; }
-  .support { --up: 0px; }
+
   .ln { clip-path: none; }   /* рядки одразу на місці, маска не потрібна */
   :is(.btn, .link, .req__btn, .abtn, .hdr__burger):active { transform: none; }
   /* меню — одразу, без кола; і без мікропереходу видимості, інакше фокус не встигає на перший пункт */

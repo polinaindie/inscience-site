@@ -385,10 +385,10 @@
     leadWords.forEach((w, i) => { w.style.opacity = lerp(LEAD_DIM, 1, clamp((head - i) / LEAD_SOFT)).toFixed(3); });
   };
 
-  /* ---------- 6. Проєкти: сітка по дві картки в ряд ---------- */
+  /* ---------- 6. Проєкти: слайдер карток (стрілки й лічильник — розділ 14) ---------- */
   // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
   const pgrid = $('.pgrid');
-  const pad2 = n => String(n).padStart(2, '0');   // лічильники «01 / 06» (новини)
+  const pad2 = n => String(n).padStart(2, '0');   // лічильники слайдерів «01 / 08»
   // Форма напрямку біля фото (003 Overlap): велика, плоска, у кодовому кольорі (розмітка); рамка рівної площі —
   // пропорції зі спрайта, щоб широке око не важило більше за серце
   spriteReady.then(() => $$('.pcard__shape', pgrid).forEach(el => {
@@ -402,7 +402,7 @@
     if (!c) return;
     e.preventDefault();
     revealNow($('#projects'));
-    c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start', inline: 'start' });   // і трек — до картки
     $('.pcard__more', c)?.focus({ preventScroll: true });
   }));
 
@@ -454,8 +454,7 @@
     });
   });
   const supportInner = $('.support__inner');
-  const supportBg = $('.support__bg');
-  let lastSp = -1, supportIn = false, supportTop = Infinity;   // supportTop — верх синього кола у вʼюпорті
+  let supportIn = false;
 
   function supportShow(instant) {
     supportIn = true;
@@ -466,20 +465,10 @@
   // фокус з клавіатури всередині — текст і кнопки мають бути видно одразу
   supportInner.addEventListener('focusin', () => { if (!supportIn) supportShow(true); });
 
-  // Синє коло розкривається чистим, без форм по краю
-  function renderSupport(sp, sr, vw, vh) {
-    // текст не скрабимо: один тригер — рядки заголовка й ліду, потім реквізити (CSS); прийшли якорем — одразу на місці
-    if (sp > .7 && !supportIn) supportShow('instant' in supportInner.dataset);
-    if (sp === lastSp) return;
-    lastSp = sp;
-    const k = range(sp, 0, .7);   // до тригера тексту синє вже повне — білий текст не ляже на папір
-    const sR = Math.hypot(vw / 2, Math.max(sr.height * .85, vh));
-    const R = sR * Math.pow(k, 1.8);
-    // шари заходять вище секції (--up), тож центр кола рахуємо від їхнього верху
-    const up = -supportBg.offsetTop;
-    const cy = up + sr.height * .35;
-    supportTop = k > 0 ? sr.top + sr.height * .35 - R : Infinity;
-    supportBg.style.clipPath = k >= 1 && !up ? 'none' : `circle(${R}px at 50% ${cy}px)`;
+  // Синє поле наїжджає рівним краєм (CSS); текст не скрабимо: один тригер — рядки заголовка й ліду, потім реквізити (CSS);
+  // прийшли якорем — одразу на місці
+  function renderSupport(sp) {
+    if (sp > .4 && !supportIn) supportShow('instant' in supportInner.dataset);
   }
   const hdr = $('.hdr');
   const ftr = $('.ftr');
@@ -507,7 +496,7 @@
     // ПІДТРИМКА
     const sr = support.getBoundingClientRect();
     const sp = reduce ? 1 : clamp((vh - sr.top) / (vh * 1.05));
-    renderSupport(sp, sr, vw, vh);
+    renderSupport(sp);
 
     // Тема хедера за секцією під ним
     const y = 40;
@@ -522,7 +511,7 @@
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
           theme = 'blue';
         }
-        else if (s === support) theme = sp >= .7 ? 'solid-blue' : 'light';
+        else if (s === support) theme = 'solid-blue';
         else if (s.dataset.theme === 'field') {
           theme = 'field';
           const field = s.style.getPropertyValue('--field');
@@ -535,8 +524,6 @@
         break;
       }
     }
-    // синє коло «Підтримати» піднялося під хедер ще над «Партнерами»
-    if (theme === 'light' && sr.top > y && supportTop < hdr.offsetHeight) theme = 'solid-blue';
     if (hdr.dataset.theme !== theme) hdr.dataset.theme = theme;
     hdr.classList.toggle('is-mark', mark);
     hdr.classList.toggle('is-lime', lime);
@@ -550,7 +537,7 @@
   const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { frame(); ticking = false; }); } };
   addEventListener('scroll', onScroll, { passive: true });
   let rz;
-  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { lastSp = -1; sizeField(); frame(); }, 120); });
+  addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { sizeField(); frame(); }, 120); });
   frame();
 
   // Фокус у hero, коли сцену вже прокручено, — повертаємо її на початок: білий текст має лежати на синьому
@@ -1130,21 +1117,22 @@
     mSync();
   }
 
-  /* ---------- 14. Слайдери новин і «Про нас пишуть»: нативний скрол зі snap, стрілки, лічильник, перетягування мишею ---------- */
+  /* ---------- 14. Слайдери проєктів, новин і «Про нас пишуть»: нативний скрол зі snap, стрілки, лічильник, перетягування мишею ---------- */
   const slider = sec => {
     const track = $('.track', sec), btns = $$('.tfoot .abtn', sec), items = [...track.children], num = $('.tfoot__count b', sec);
     $('.tfoot__count span', sec).textContent = pad2(items.length);
-    const stepW = () => items[1] ? items[1].offsetLeft - items[0].offsetLeft : track.clientWidth;
+    // картки можуть бути різної ширини (проєкти): крок — до сусідньої картки, номер — найближча до лівого краю
+    const lefts = () => items.map(el => el.offsetLeft - items[0].offsetLeft);
+    const nearest = left => lefts().reduce((b, x, i, a) => Math.abs(x - left) < Math.abs(a[b] - left) ? i : b, 0);
+    const go = (i, left = track.scrollLeft) => track.scrollTo({ left: lefts()[clamp(i, 0, items.length - 1)] ?? left, behavior: reduce ? 'auto' : 'smooth' });
     // краї вимикають стрілки; номер — перша картка в кадрі
     const edges = () => {
       const max = track.scrollWidth - track.clientWidth;
       btns[0].disabled = track.scrollLeft <= 2;
       btns[1].disabled = track.scrollLeft >= max - 2;
-      num.textContent = pad2(Math.round(track.scrollLeft / stepW()) + 1);
+      num.textContent = pad2(nearest(track.scrollLeft) + 1);
     };
-    btns.forEach(b => b.addEventListener('click', () => {
-      track.scrollBy({ left: +b.dataset.step * stepW(), behavior: reduce ? 'auto' : 'smooth' });
-    }));
+    btns.forEach(b => b.addEventListener('click', () => go(nearest(track.scrollLeft) + +b.dataset.step)));
     // Мишею трек можна тягнути; після перетягування клік по картці не спрацьовує
     let drag = null, dragged = false;
     track.addEventListener('pointerdown', e => {
@@ -1163,17 +1151,17 @@
       drag = null;
       if (!dragged) return;
       // доводимо до найближчої картки (snap на час перетягування вимкнено)
-      const left = track.scrollLeft, w = stepW();
+      const left = track.scrollLeft;
       track.classList.remove('is-drag');
       track.scrollLeft = left;
-      track.scrollTo({ left: Math.round(left / w) * w, behavior: reduce ? 'auto' : 'smooth' });
+      go(nearest(left));
     });
     track.addEventListener('click', e => { if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; } }, true);
     track.addEventListener('scroll', edges, { passive: true });
     addEventListener('resize', edges);
     edges();
   };
-  [newsSec, mediaSec].filter(s => !s.hidden).forEach(slider);
+  [$('#projects'), newsSec, mediaSec].filter(s => !s.hidden).forEach(slider);
 
   /* ---------- 15. Ховер кнопок: коло заливки росте від точки входу курсора й стягується в точку виходу ---------- */
   const fillXY = (el, e) => {
