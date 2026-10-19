@@ -200,14 +200,8 @@
   if (location.hash) revealHash(location.hash);
   document.addEventListener('focusin', e => { const r = e.target.closest?.('.reveal:not(.in)'); if (r) revealNow(r); });
 
-  /* ---------- 5. Напрямки: лічильники проєктів і ілюстрації з шарів форм ---------- */
-  const cards = $$('.pcard');
-  const plural = n => n === 1 ? 'проєкт' : (n >= 2 && n <= 4 ? 'проєкти' : 'проєктів');
-  // лічильник уже є в HTML; тут лише звіряємо з картками
-  $$('.dir').forEach(d => {
-    const n = cards.filter(c => c.dataset.dirs.split(' ').includes(d.dataset.dir)).length;
-    $('[data-count]', d).textContent = `${n} ${plural(n)}`;
-  });
+  /* ---------- 5. Напрямки: ілюстрації з шарів форм ---------- */
+  const cards = $$('.pcard');   // картки проєктів: напрямок веде до своєї першої (блок 6)
 
   const svgEl = (tag, attrs = {}) => {
     const el = document.createElementNS(NS, tag);
@@ -345,7 +339,7 @@
     if (orbOn && !orbRaf) orbRaf = requestAnimationFrame(orbTick);
   }).observe($('#about'));
 
-  /* ---------- 6. Проєкти: картки сходинками ---------- */
+  /* ---------- 6. Проєкти: сітка по дві картки в ряд ---------- */
   // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
   const pgrid = $('.pgrid');
   const pad2 = n => String(n).padStart(2, '0');   // лічильники «01 / 06» (новини)
