@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=33">
+  <link rel="stylesheet" href="styles.css?v=34">
   <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
   <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -121,7 +121,7 @@
 <section class="dirs" id="directions" data-theme="light">
   <div class="wrap">
     <div class="sec-head">
-      <h2 class="h2 reveal" data-ln>Одна мета.<br>Чотири <br class="br-m">напрямки</h2>
+      <h2 class="h2 reveal" data-ln>Одна мета<br>Чотири <br class="br-m">напрямки</h2>
     </div>
 
     <!-- посилання веде до першої картки свого напрямку в проєктах (скрипт); без JS — до «Проєктів».
@@ -160,8 +160,16 @@
     <div class="sec-head">
       <h2 class="h2 reveal" data-ln>Наші проєкти</h2>
     </div>
+    <!-- Фільтр за напрямком (назви — з «Напрямків»); «Усі» — UI-мікрокопі, потрібне погодження. Без JS сховано -->
+    <div class="ptabs reveal" role="group" aria-label="Напрямки">
+      <button class="btn btn--sm btn--line ptab" type="button" aria-pressed="true" aria-controls="projects-track" data-dir="">Усі</button>
+      <button class="btn btn--sm btn--line ptab" type="button" aria-pressed="false" aria-controls="projects-track" data-dir="flow" style="--c:var(--blue);--c-on:#fff">Популяризація науки для дітей і дорослих</button>
+      <button class="btn btn--sm btn--line ptab" type="button" aria-pressed="false" aria-controls="projects-track" data-dir="intersection" style="--c:var(--lime);--c-on:var(--ink)">Гендерна рівність у&nbsp;STEM</button>
+      <button class="btn btn--sm btn--line ptab" type="button" aria-pressed="false" aria-controls="projects-track" data-dir="grid" style="--c:var(--pink);--c-on:var(--ink)">Співпраця науки, бізнесу та держави</button>
+      <button class="btn btn--sm btn--line ptab" type="button" aria-pressed="false" aria-controls="projects-track" data-dir="density" style="--c:var(--purple);--c-on:#fff">Здоровʼя через доказову профілактику</button>
+    </div>
     <div class="track pgrid" id="projects-track" role="region" aria-label="Проєкти" tabindex="0">
-      <article class="reveal pcard pcard--lead pcard--flag" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
+      <article class="reveal pcard pcard--lead pcard--flag pcard--dark" data-dirs="flow grid" style="--c:var(--blue);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">INSCIENCE Conference</h3>
           <p class="pcard__desc">Найбільша науково-популярна та deep tech конференція в Україні. Пʼята конференція відбулася 13–14 червня 2026 року в Києві.</p>
@@ -181,7 +189,7 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--pink)"><use href="#i-burst"/></svg>
       </article>
-      <article class="reveal pcard" data-dirs="density" style="--c:var(--green);--on:#fff">
+      <article class="reveal pcard pcard--dark" data-dirs="density" style="--c:var(--green);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">Медіа «Бережи себе»</h3>
           <p class="pcard__desc">Платформа доказової інформації про здоровʼя: гайди разом із МОЗ і два подкасти.</p>
@@ -229,7 +237,7 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--blue)"><use href="#i-burst"/></svg>
       </article>
-      <article class="reveal pcard" data-dirs="density" style="--c:var(--maroon);--on:#fff">
+      <article class="reveal pcard pcard--dark" data-dirs="density" style="--c:var(--maroon);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">Осередки здоровʼя</h3>
           <p class="pcard__desc">Безоплатні зустрічі з лікарями про профілактику серцево-судинних захворювань.</p>
@@ -246,7 +254,7 @@
         </div>
         <svg class="pcard__pop" aria-hidden="true" style="--c:var(--coral)"><use href="#i-hash"/></svg>
       </article>
-      <article class="reveal pcard" data-dirs="grid" style="--c:var(--purple);--on:#fff">
+      <article class="reveal pcard pcard--dark" data-dirs="grid" style="--c:var(--purple);--on:#fff">
         <div class="pcard__text">
           <h3 class="pcard__title">INSCIENCE Business</h3>
           <p class="pcard__desc">Допомагає науковцям і бізнесу разом створювати наукоємні технології.</p>
@@ -439,34 +447,31 @@
 <!-- ============ 8. ПАРТНЕРИ ============ -->
 <!-- Заглушки: реальні логотипи організацій, не підтверджені партнери INSCIENCE -->
 <section class="partners" id="partners" data-theme="light">
-  <!-- стоїть (sticky), поки «Підтримати» наїжджає поверх -->
-  <div class="partners__pin">
-    <div class="wrap">
-      <div class="sec-head">
-        <h2 class="h3 reveal" data-ln>Разом з нами</h2>
-      </div>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h3 reveal" data-ln>Разом з нами</h2>
     </div>
-    <div class="marquee reveal" role="region" aria-label="Партнери" tabindex="0">
-      <div class="marquee__track">
-        <ul class="marquee__list">
-          <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="МОН України" style="--h:78px" draggable="false"></li>
-          <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="МОЗ України" style="--h:62px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/google.svg" alt="Google" style="--h:40px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="UNICEF" style="--h:38px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="British Council" style="--h:50px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="Київстар" style="--h:36px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="CEDOS" style="--h:58px" draggable="false"></li>
-        </ul>
-        <ul class="marquee__list" aria-hidden="true" inert>
-          <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="" style="--h:78px" draggable="false"></li>
-          <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="" style="--h:62px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/google.svg" alt="" style="--h:40px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="" style="--h:38px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="" style="--h:50px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="" style="--h:36px" draggable="false"></li>
-          <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="" style="--h:58px" draggable="false"></li>
-        </ul>
-      </div>
+  </div>
+  <div class="marquee reveal" role="region" aria-label="Партнери" tabindex="0">
+    <div class="marquee__track">
+      <ul class="marquee__list">
+        <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="МОН України" style="--h:78px" draggable="false"></li>
+        <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="МОЗ України" style="--h:62px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/google.svg" alt="Google" style="--h:40px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="UNICEF" style="--h:38px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="British Council" style="--h:50px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="Київстар" style="--h:36px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="CEDOS" style="--h:58px" draggable="false"></li>
+      </ul>
+      <ul class="marquee__list" aria-hidden="true" inert>
+        <li><img class="plogo is-tone" src="assets/logos/partners/mon.svg" alt="" style="--h:78px" draggable="false"></li>
+        <li><img class="plogo is-tone" src="assets/logos/partners/moz.svg" alt="" style="--h:62px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/google.svg" alt="" style="--h:40px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/unicef.svg" alt="" style="--h:38px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/britishcouncil.svg" alt="" style="--h:50px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/kyivstar.svg" alt="" style="--h:36px" draggable="false"></li>
+        <li><img class="plogo" src="assets/logos/partners/cedos.png" alt="" style="--h:58px" draggable="false"></li>
+      </ul>
     </div>
   </div>
 </section>
@@ -543,6 +548,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=33"></script>
+<script src="main.js?v=34"></script>
 </body>
 </html>

@@ -395,15 +395,16 @@
     const vb = document.getElementById($('use', el).getAttribute('href').slice(1))?.getAttribute('viewBox')?.split(/[\s,]+/).map(Number);
     if (vb) el.style.setProperty('--sq', Math.sqrt(vb[2] / vb[3]).toFixed(3));
   }));
-  // Напрямок веде до своєї першої картки (data-dirs); без JS — до «Проєктів».
-  // Фокус — на кнопку картки: наступний Tab іде звідти, а з клавіатури картка одразу «відкрита» (:focus-visible)
+  // Напрямок веде до «Проєктів», відфільтрованих за ним (data-dirs; фільтр — розділ 14); без JS — просто до «Проєктів».
+  // Фокус — на обрану пілюлю фільтра: звідти Tab іде далі до карток
   dirEls.forEach(d => d.addEventListener('click', e => {
-    const c = cards.find(c => c.dataset.dirs.split(' ').includes(d.dataset.dir));
-    if (!c) return;
+    if (!cards.some(c => c.dataset.dirs.split(' ').includes(d.dataset.dir))) return;
     e.preventDefault();
-    revealNow($('#projects'));
-    c.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start', inline: 'start' });   // і трек — до картки
-    $('.pcard__more', c)?.focus({ preventScroll: true });
+    const sec = $('#projects');
+    revealNow(sec);
+    filterProjects(d.dataset.dir);
+    sec.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+    $(`.ptab[data-dir="${d.dataset.dir}"]`, sec)?.focus({ preventScroll: true });
   }));
 
 
@@ -438,9 +439,9 @@
   // той самий жест для «Про нас пишуть» над новинами й «Підтримати» над партнерами: попередня секція стоїть, коли
   // дійшла низом до краю екрана, наступна наїжджає поверх. CSS бере висоту того, що стоїть (--wh, на скільки підняти
   // sticky), і того, що наїжджає (--mh, наїзд — не більше екрана)
-  const newsSec = $('#news'), mediaSec = $('#media'), partnersSec = $('#partners');
+  const newsSec = $('#news'), mediaSec = $('#media');
   const support = $('.support');
-  [[newsSec, $('.wrap', newsSec), mediaSec], [partnersSec, $('.partners__pin'), support]].forEach(([under, pin, over]) => {
+  [[newsSec, $('.wrap', newsSec), mediaSec]].forEach(([under, pin, over]) => {
     const ro = new ResizeObserver(() => {
       under.style.setProperty('--wh', `${pin.offsetHeight}px`);
       [under, over].forEach(s => s.style.setProperty('--mh', `${over.offsetHeight}px`));
@@ -505,7 +506,6 @@
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
         if (s === newsSec && !mediaSec.hidden && mediaSec.getBoundingClientRect().top <= y) continue;   // лайм уже наїхав під шапку
-        if (s === partnersSec && sr.top <= y) continue;   // «Підтримати» вже наїхала під шапку
         if (s === hero) {
           if (about.getBoundingClientRect().top <= y) continue;   // «Про нас» уже наїхала під шапку
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
@@ -1119,8 +1119,8 @@
 
   /* ---------- 14. Слайдери проєктів, новин і «Про нас пишуть»: нативний скрол зі snap, стрілки, лічильник, перетягування мишею ---------- */
   const slider = sec => {
-    const track = $('.track', sec), btns = $$('.tfoot .abtn', sec), items = [...track.children], num = $('.tfoot__count b', sec);
-    $('.tfoot__count span', sec).textContent = pad2(items.length);
+    const track = $('.track', sec), btns = $$('.tfoot .abtn', sec), all = [...track.children], num = $('.tfoot__count b', sec);
+    let items = all;   // видимі картки (фільтр проєктів ховає решту)
     // картки можуть бути різної ширини (проєкти): крок — до сусідньої картки, номер — найближча до лівого краю
     const lefts = () => items.map(el => el.offsetLeft - items[0].offsetLeft);
     const nearest = left => lefts().reduce((b, x, i, a) => Math.abs(x - left) < Math.abs(a[b] - left) ? i : b, 0);
@@ -1159,9 +1159,36 @@
     track.addEventListener('click', e => { if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; } }, true);
     track.addEventListener('scroll', edges, { passive: true });
     addEventListener('resize', edges);
-    edges();
+    // після фільтра: лічильник — по видимих, трек — на початок
+    const refresh = () => {
+      items = all.filter(el => !el.hidden);
+      $('.tfoot__count span', sec).textContent = pad2(items.length);
+      track.scrollLeft = 0;
+      edges();
+    };
+    refresh();
+    return { track, refresh };
   };
-  [$('#projects'), newsSec, mediaSec].filter(s => !s.hidden).forEach(slider);
+  const sliders = new Map([$('#projects'), newsSec, mediaSec].filter(s => !s.hidden).map(s => [s, slider(s)]));
+
+  // Фільтр проєктів за напрямком: картки інших напрямків ховаємо, трек — на початок, видимі зʼявляються знову
+  // (як при першій появі — у кадрі зліва направо). Пілюлі виходять по одній, як форми футера
+  const projSlider = sliders.get($('#projects'));
+  const ptabs = $$('.ptab');
+  ptabs.forEach((b, i) => { b.classList.add('pop'); b.style.setProperty('--i', i); });
+  function filterProjects(dir) {
+    ptabs.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === dir)));
+    cards.forEach(c => { c.hidden = true; });
+    void projSlider.track.offsetWidth;   // з display:none поява картки і її форм програється заново
+    let k = 0;
+    cards.forEach(c => {
+      c.hidden = !!dir && !c.dataset.dirs.split(' ').includes(dir);
+      if (!c.hidden) c.style.setProperty('--col', Math.min(k++, 2));
+    });
+    projSlider.refresh();
+  }
+  ptabs.forEach(b => b.addEventListener('click', () => { if (b.getAttribute('aria-pressed') !== 'true') filterProjects(b.dataset.dir); }));
+  filterProjects('');
 
   /* ---------- 15. Ховер кнопок: коло заливки росте від точки входу курсора й стягується в точку виходу ---------- */
   const fillXY = (el, e) => {
@@ -1170,8 +1197,8 @@
     el.style.setProperty('--x', `${(e.clientX - r.left).toFixed(0)}px`);
     el.style.setProperty('--y', `${(e.clientY - r.top).toFixed(0)}px`);
   };
-  // картка новини — те саме коло під вмістом; фокус приходить на посилання всередині, тож слухаємо focusin
-  $$('.btn, .link, .req__btn, .mcard, .abtn, .newscard').forEach(el => {
+  // картки новини й напрямку — те саме коло під вмістом; фокус приходить на посилання всередині, тож слухаємо focusin
+  $$('.btn, .link, .req__btn, .mcard, .abtn, .newscard, .dir').forEach(el => {
     el.addEventListener('pointerenter', e => fillXY(el, e));
     el.addEventListener('pointerleave', e => fillXY(el, e));
     // фокус з клавіатури — від центру

@@ -77,17 +77,17 @@ main:focus { outline: none; }
 .skip:focus-visible { transform: none; --ring: var(--ink); }
 
 /* ---------- Typography ---------- */
-/* заголовки блоків — Recht 400 (500 для них заважкий, клієнтка 19.10.2026) */
+/* заголовки блоків — Recht 400 (500 для них заважкий), кегль до 84px (112 завеликий) — клієнтка 19.10.2026 */
 .h2, .h3 {
   font-family: var(--f-head);
   font-weight: 400;
   text-transform: uppercase;
-  font-size: clamp(46px, 7.2vw, 112px);
-  line-height: .88;
+  font-size: clamp(40px, 5.4vw, 84px);
+  line-height: .9;
   letter-spacing: -.01em;
 }
 /* третій рівень — для службових блоків («Разом з нами») */
-.h3 { font-size: clamp(32px, 3.6vw, 56px); line-height: .92; }
+.h3 { font-size: clamp(30px, 3.2vw, 48px); line-height: .92; }
 /* Без кольорових слів: акценти в заголовках і тексті (.about__acc, .support__acc тощо) — кольору свого тексту */
 :is(h1, h2, h3, p, .h2, .lead) :is(em, strong, b) { color: inherit; }
 /* і без жирності чи курсиву: акцентне слово заголовка («людям», «видимою», «разом») — тієї ж ваги, що й рядок.
@@ -425,19 +425,21 @@ main:focus { outline: none; }
   border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
   transition: border-color .4s var(--ease);
 }
-/* Hover / фокус — тло картки м'яко набирає світлий тон кольору напрямку (шар під вмістом, лише opacity), лінія темніє */
+/* Hover / фокус — як у новин: під вмістом від точки входу курсора росте коло світлого тону кольору напрямку
+   і стягується в точку виходу (--x/--y ставить скрипт); фокус з клавіатури — з центру. Лінія темніє, картка не рухається */
+.dir { overflow: clip; }
 .dir::before {
-  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; pointer-events: none;
-  background: color-mix(in srgb, var(--c) var(--tint, 12%), var(--paper));
-  opacity: 0; transition: opacity .5s var(--ease);
+  content: ""; position: absolute; z-index: -1; left: var(--x, 50%); top: var(--y, 50%);
+  width: 340%; aspect-ratio: 1; border-radius: 50%; background: color-mix(in srgb, var(--c) var(--tint, 20%), var(--paper));
+  translate: -50% -50%; scale: 0; pointer-events: none;
+  transition: scale .9s var(--ease);
 }
-.dir[data-dir="intersection"] { --tint: 22%; }   /* лайм і рожевий світлі — тон густіший, щоб читався так само */
-.dir[data-dir="grid"] { --tint: 20%; }
+.dir[data-dir="intersection"] { --tint: 26%; }   /* лайм світлий — тон густіший, щоб читався так само */
 .dir:focus-visible { border-color: currentColor; }
-.dir:focus-visible::before { opacity: 1; }
+.dir:focus-visible::before { scale: 1; }
 @media (hover: hover) {
   .dir:hover { border-color: currentColor; }
-  .dir:hover::before { opacity: 1; }
+  .dir:hover::before { scale: 1; }
 }
 
 /* Ілюстрація (як слайд 1.4 «Multiple ideas»): база → менша форма → форма напрямку; шари складає скрипт.
@@ -490,9 +492,21 @@ main:focus { outline: none; }
 @media (min-width: 900px) {
   .pgrid > .pcard { flex-basis: calc((100% - var(--gap)) * 5 / 12); }
   .pgrid > .pcard--lead { flex-basis: calc((100% - var(--gap)) * 7 / 12); }
-  .pcard:nth-child(2) { --col: 1; }   /* друга в кадрі зʼявляється слідом */
 }
 .pgrid__foot { margin-top: clamp(28px, 5vh, 56px); }
+
+/* Фільтр за напрямком — ряд пілюль над треком (ті самі .btn--line, hover — коло чорнила від курсора).
+   Обраний — суцільний колір напрямку («Усі» — чорнило), як плашка дати в новинах. Не вміщається — ряд гортається */
+.ptabs {
+  display: flex; gap: 8px; margin-bottom: clamp(8px, 2vh, 20px);
+  overflow-x: auto; scrollbar-width: none; padding: 4px; margin-inline: -4px;   /* запас під кільце фокусу */
+  position: relative; z-index: 1;   /* над запасом треку для форм, що вилітають */
+}
+.ptabs::-webkit-scrollbar { display: none; }
+html:not(.js) .ptabs { display: none; }
+.ptab { flex: none; height: 46px; padding: 0 18px; font-size: 14px; --c: var(--ink); --c-on: var(--paper); }
+@media (min-width: 761px) { .ptabs { flex-wrap: wrap; overflow: visible; } }   /* desktop — переносом, без прихованих пілюль */
+.ptab[aria-pressed="true"] { background: var(--c); color: var(--c-on); box-shadow: inset 0 0 0 1.5px var(--c); --fill: var(--c); --fill-on: var(--c-on); cursor: default; }
 
 /* Під треком — один патерн для новин і «Про нас пишуть»: лінк ліворуч, ← 01 / 08 → праворуч */
 .tfoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: 28px; }
@@ -529,16 +543,19 @@ main:focus { outline: none; }
 .abtn:disabled { opacity: .3; cursor: default; }
 
 /* Картка: фото у формі зверху, під ним текст; кнопка — по низу картки (картки рядка однакової висоти).
-   Поле --bg і текст --fg — зареєстровані кольори: міняються місцями плавно, і «дірки» у формах (--hole) їдуть разом із полем */
+   Поле --bg і текст --fg — зареєстровані кольори, міняються плавно, і «дірки» у формах (--hole) їдуть разом із полем.
+   Hover / фокус — поле стає чорнилом (біле поле зливалося з папером, клієнтка 19.10.2026): на світлих картках текст
+   набирає колір картки, на темних (.pcard--dark) лишається білим */
 .pcard {
-  --h: 0; --col: 0;
-  --bg: color-mix(in srgb, var(--on) calc(var(--h) * 100%), var(--c));
-  --fg: color-mix(in srgb, var(--c) calc(var(--h) * 100%), var(--on));
+  --h: 0; --col: 0; --hf: var(--c);
+  --bg: color-mix(in srgb, var(--ink) calc(var(--h) * 100%), var(--c));
+  --fg: color-mix(in srgb, var(--hf) calc(var(--h) * 100%), var(--on));
   position: relative; display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: clamp(20px, 2.6vh, 28px);
   padding: clamp(22px, 2vw, 36px); border-radius: 28px;
   background: var(--bg); color: var(--fg);
   transition: --bg .5s ease-in-out, --fg .5s ease-in-out;
 }
+.pcard--dark { --hf: var(--on); }
 .pcard:has(:focus-visible) { --h: 1; }
 @media (hover: hover) { .pcard:hover { --h: 1; } }
 /* поява — як форми футера, у парі зліва направо; форма біля фото — слідом за своєю карткою */
@@ -568,8 +585,6 @@ main:focus { outline: none; }
 .pcard__shape--l { left: 0; top: var(--at, 50%); --tx: 0%; --ty: -50%; --ox: -1; --oy: 0; }
 .pcard__shape--b { bottom: 0; left: var(--at, 50%); --tx: -50%; --ty: 0%; --ox: 0; --oy: 1; }
 .pcard__shape--t { top: 0; left: var(--at, 50%); --tx: -50%; --ty: 0%; --ox: 0; --oy: -1; }
-/* флагман: око кольору паперу на синьому — коли поле стає білим, око стає синім */
-.pcard--flag .pcard__shape { color: color-mix(in srgb, var(--blue) calc(var(--h) * 100%), var(--c)); }
 /* графіка без фото: суцільна форма + іконка кольору картки; диск — кольору тексту картки (міняється разом із полем) */
 .pcard__fig { position: absolute; inset: 8%; display: grid; place-items: center; color: var(--c); --hole: var(--fg); }
 .pcard__fig--disc { border-radius: 50%; background: var(--fg); }
@@ -618,7 +633,6 @@ main:focus { outline: none; }
 .pcard__stats dt { font-weight: 700; font-size: clamp(30px, 5vh, 44px); line-height: 1; white-space: nowrap; }
 .pcard__stats dd { font-family: var(--f-ui); font-weight: 600; font-size: 17px; line-height: 1.3; margin-top: 6px; opacity: 1; }
 
-.projects .h2 { font-size: clamp(46px, min(7.2vw, 11vh), 112px); }
 
 
 .mask-clover, .mask-star, .mask-hash, .mask-drop, .mask-circle {
@@ -638,9 +652,9 @@ main:focus { outline: none; }
    ========================================================== */
 .news { padding: 16vh 0 14vh; }
 /* Наїзд — той самий жест, що «Про нас» на hero: попередня секція дійшла низом до краю екрана й стоїть (sticky),
-   наступна заходить поверх на свою висоту, але не більше екрана. Пари: новини → «Про нас пишуть», партнери → «Підтримати»
-   (див. розділ 8). Висоту того, що стоїть (--wh), і того, що наїжджає (--mh), міряє скрипт. Без медіа — звичайний стик */
-.has-stack :is(.news, .media, .partners, .support) { --o: min(100vh, var(--mh, 100vh)); --o: min(100svh, var(--mh, 100svh)); }   /* на скільки наступна заходить на попередню */
+   наступна заходить поверх на свою висоту, але не більше екрана. Пара одна: новини → «Про нас пишуть».
+   Висоту того, що стоїть (--wh), і того, що наїжджає (--mh), міряє скрипт. Без медіа — звичайний стик */
+.has-stack :is(.news, .media) { --o: min(100vh, var(--mh, 100vh)); --o: min(100svh, var(--mh, 100svh)); }   /* на скільки наступна заходить на попередню */
 .has-stack .news:has(+ .media:not([hidden])) { padding-bottom: 0; }
 .has-stack .news:has(+ .media:not([hidden])) > .wrap { position: sticky; top: calc(100vh - var(--wh, 100vh)); top: calc(100svh - var(--wh, 100svh)); padding-bottom: 14vh; }
 .has-stack .news:has(+ .media:not([hidden]))::after { content: ""; display: block; height: var(--o); }
@@ -741,16 +755,7 @@ main:focus { outline: none; }
    ========================================================== */
 .partners { padding: 9vh 0 10vh; }
 .partners .sec-head { margin-bottom: 40px; }
-/* «Підтримати» наїжджає на партнерів тим самим жестом, що лайм на новини (див. розділ 6): партнери дійшли низом
-   до краю екрана й стоять, синя «Підтримати» заходить поверх рівним краєм. Reduced motion — звичайний стик */
-.has-stack .partners { padding: 0; }
-.has-stack .partners__pin {
-  position: sticky; top: calc(100vh - var(--wh, 100vh)); top: calc(100svh - var(--wh, 100svh));
-  padding: 9vh 0 10vh;
-}
-.partners__pin > .wrap { width: 100%; }
-.has-stack .partners::after { content: ""; display: block; height: var(--o); }
-.has-stack .partners + .support { z-index: 1; margin-top: calc(-1 * var(--o)); }
+/* після партнерів — звичайний стик із «Підтримати»: блок нижчий за екран, і наїзд закривав лого, щойно вони зʼявлялись */
 /* лого великі (×1.7 від базової висоти --h), між ними — лише повітря: дрібних форм-роздільників немає */
 .marquee { overflow: hidden; border-block: 1px solid var(--line); --band: 230px; }   /* --band — висота смуги */
 .marquee:focus-visible { outline-offset: -4px; --ring: var(--ink); }
@@ -775,15 +780,14 @@ main:focus { outline: none; }
 /* ==========================================================
    9. ЯК ПІДТРИМАТИ — повернення до синього
    ========================================================== */
-/* синє поле з рівним краєм — без кола, наїжджає на «Партнерів» (розділ 8) */
-.support { position: relative; padding: 22vh 0 16vh; color: #fff; overflow-x: clip; }
+/* синє поле з рівним краєм — без кола, звичайний стик із «Партнерами» */
+.support { position: relative; padding: 16vh 0 16vh; color: #fff; overflow-x: clip; }
 .support__bg { position: absolute; inset: 0; background: var(--blue); }
 .support__inner { position: relative; display: flex; flex-direction: column; gap: 56px; }
 /* текст не скрабимо: заголовок і лід — рядками з маски, реквізити — слідом, один раз (тригер .in ставить скрипт) */
 .js .support__req { opacity: 0; transform: translateY(32px); transition: opacity .6s var(--ease-out) .3s, transform .8s var(--ease-out) .3s; }
 .support__inner.in .support__req { opacity: 1; transform: none; }
 .support__inner.is-instant .support__req { transition: none; }
-.support__title { font-size: clamp(44px, 6.6vw, 104px); }
 .support__grid { display: grid; grid-template-columns: 5fr 7fr; gap: 64px; align-items: start; }
 .support__online { display: flex; flex-direction: column; gap: 32px; align-items: flex-start; }
 .support__lead { display: flex; flex-direction: column; max-width: 26em; }
