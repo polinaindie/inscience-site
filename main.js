@@ -557,7 +557,7 @@
 
     // Тема хедера за секцією під ним
     const y = 40;
-    let theme = 'light', mark = false;
+    let theme = 'light', mark = false, lime = false;
     for (const s of sections) {
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
@@ -570,7 +570,9 @@
         else if (s === support) theme = sp >= .7 ? 'solid-blue' : 'light';
         else if (s.dataset.theme === 'field') {
           theme = 'field';
-          hdr.style.setProperty('--field', s.style.getPropertyValue('--field'));
+          const field = s.style.getPropertyValue('--field');
+          lime = field.includes('--lime');   // лаймова «Підтримати» на лаймовому полі зливається — CSS перефарбує її
+          hdr.style.setProperty('--field', field);
           hdr.style.setProperty('--on', s.style.getPropertyValue('--on'));
           hdr.style.setProperty('--off', s.style.getPropertyValue('--off') || 'var(--ink)');   // текст CTA на тлі --on
         }
@@ -582,6 +584,7 @@
     if (theme === 'light' && sr.top > y && supportTop < hdr.offsetHeight) theme = 'solid-blue';
     if (hdr.dataset.theme !== theme) hdr.dataset.theme = theme;
     hdr.classList.toggle('is-mark', mark);
+    hdr.classList.toggle('is-lime', lime);
 
     // Футер: хедер більше не кріпиться — стоїть над купою фігур і їде вгору разом зі сторінкою, не перекриваючи їх
     const lift = Math.min(0, ftr.getBoundingClientRect().top - pileRise - hdr.offsetHeight);
@@ -1371,7 +1374,7 @@
     el.style.setProperty('--x', `${(e.clientX - r.left).toFixed(0)}px`);
     el.style.setProperty('--y', `${(e.clientY - r.top).toFixed(0)}px`);
   };
-  $$('.btn, .req__btn, .mcard').forEach(el => {
+  $$('.btn, .link, .req__btn, .mcard').forEach(el => {
     el.addEventListener('pointerenter', e => fillXY(el, e));
     el.addEventListener('pointerleave', e => fillXY(el, e));
     // фокус з клавіатури — від центру

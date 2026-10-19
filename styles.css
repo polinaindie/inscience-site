@@ -62,8 +62,9 @@ h1, h2, h3, p { margin: 0; }
 .btn--light { --ring: #fff; }
 .btn--ink { --ring: var(--ink); }
 .btn--lime, .req__btn.is-done { --ring: var(--lime); }
-.hdr__cta { --ring: #fff; }
-.hdr[data-theme="light"] .hdr__cta { --ring: var(--blue); }
+.hdr__cta { --ring: var(--lime); }
+.hdr[data-theme="light"] .hdr__cta { --ring: var(--ink); }   /* лайм на папері чи полі — кільце кольору тексту шапки */
+.hdr[data-theme="field"] .hdr__cta { --ring: var(--on); }
 main:focus { outline: none; }
 
 /* ---------- Skip-link ---------- */
@@ -84,6 +85,8 @@ main:focus { outline: none; }
   line-height: .88;
   letter-spacing: -.01em;
 }
+/* Без кольорових слів: акценти в заголовках і тексті (.about__acc, .support__acc тощо) — кольору свого тексту */
+:is(h1, h2, h3, p, .h2, .lead) :is(em, strong, b) { color: inherit; }
 /* ручні розбивки заголовків: .br-d — лише desktop, .br-m — лише мобільний (зі скриптом рядки будує він) */
 @media (min-width: 761px) { .br-m { display: none; } }
 @media (max-width: 760px) { .br-d { display: none; } }
@@ -94,33 +97,37 @@ main:focus { outline: none; }
   line-height: 1.3;
   letter-spacing: -.03em;
 }
-/* Вторинна дія: підкреслений текст + стрілка в суцільному колі. Hover/focus — лінія переписується зліва,
-   коло набирає брендовий колір (--lf / --lf-on), стрілка робить крок */
+/* Вторинна дія — кнопка з обводкою: тонка обводка currentColor, пілюля, розмір .btn; стрілка лишається.
+   Hover/focus — як у кнопок: коло кольору обводки росте від точки входу курсора, текст набирає колір тла
+   (--fill-on: папір на папері, колір поля на полі), стрілка робить крок */
 .link {
-  display: inline-flex; gap: 14px; align-items: center;
-  font-family: var(--f-ui); font-weight: 700; font-size: 16px;
-  letter-spacing: .08em; text-transform: uppercase; text-decoration: none;
-  --lf: var(--blue); --lf-on: #fff; --la: var(--paper);
+  display: inline-flex; align-items: center; gap: .6em;
+  height: 54px; padding: 0 26px; border-radius: 999px;
+  font-family: var(--f-ui); font-weight: 600; font-size: 16px; white-space: nowrap; text-decoration: none;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+  position: relative; isolation: isolate; overflow: hidden;
+  transition: color .35s var(--ease), transform .2s var(--ease);
+  --fill: var(--ink); --fill-on: var(--paper);
 }
-.link__t {
-  padding-bottom: 5px;
-  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2.5px no-repeat;
-  transition: background-size .5s var(--ease);
+.link::before {
+  content: ""; position: absolute; z-index: -1; left: var(--x, 50%); top: var(--y, 50%);
+  width: var(--d, 260%); aspect-ratio: 1; border-radius: 50%; background: var(--fill);
+  translate: -50% -50%; scale: 0; pointer-events: none;
+  transition: scale .6s var(--ease);
 }
-.link__a {
-  flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
-  background: currentColor; -webkit-text-fill-color: var(--la);   /* стрілка — кольору тла під лінком */
-  font-size: 18px; letter-spacing: 0; line-height: 1;
-  transition: background-color .35s var(--ease), translate .45s var(--ease);
-}
-.link:focus-visible .link__t { animation: linkLine .6s var(--ease); }
-.link:focus-visible .link__a { background: var(--lf); -webkit-text-fill-color: var(--lf-on); translate: 4px 0; }
+.link__a { display: inline-block; transition: translate .45s var(--ease); }
+.link:focus-visible { color: var(--fill-on); --ring: var(--fill); }
+.link:focus-visible::before { scale: 1; }
+.link:focus-visible .link__a { translate: 5px 0; }
 @media (hover: hover) {
-  .link:hover .link__t { animation: linkLine .6s var(--ease); }
-  .link:hover .link__a { background: var(--lf); -webkit-text-fill-color: var(--lf-on); translate: 4px 0; }
+  .link:hover { color: var(--fill-on); }
+  .link:hover::before { scale: 1; }
+  .link:hover .link__a { translate: 5px 0; }
 }
-.about .link { --la: var(--field); --lf: var(--lime); --lf-on: var(--ink); }
-@keyframes linkLine { 0% { background-size: 100% 2.5px; background-position: 100% 100%; } 45% { background-size: 0 2.5px; background-position: 100% 100%; } 46% { background-position: 0 100%; } 100% { background-size: 100% 2.5px; background-position: 0 100%; } }
+.link:active { transform: scale(.97); }
+/* на кольоровому полі — колір тексту секції, на синьому — білий */
+[data-theme="field"] .link { --fill: var(--on); --fill-on: var(--field); }
+[data-theme="blue"] .link { --fill: #fff; --fill-on: var(--blue); }
 /* Текстові посилання без кола (навігація, мова) — та сама лінія: у спокої її немає,
    на hover/focus вона пишеться зліва й стирається вправо */
 .hdr__nav a, :is(.hdr__lang, .menu__lang) a, .menu__nav a {
@@ -183,7 +190,7 @@ main:focus { outline: none; }
   -webkit-mask-size: contain; mask-size: contain;
   -webkit-mask-position: center; mask-position: center;
 }
-.logo-wm { width: 132px; aspect-ratio: 953 / 193;
+.logo-wm { width: clamp(132px, 10.4vw, 176px); aspect-ratio: 953 / 193;
   -webkit-mask-image: url(assets/logo/wordmark-nostar.svg); mask-image: url(assets/logo/wordmark-nostar.svg);
   clip-path: circle(100% at 37% 50%);
   transition: clip-path .8s var(--ease) .12s, opacity .4s .12s; }
@@ -200,49 +207,32 @@ main:focus { outline: none; }
    ========================================================== */
 .hdr {
   position: fixed; inset: 0 0 auto; z-index: 50; height: var(--hdr);
-  color: #fff;
-  transition: color .35s;
+  /* суцільна шапка кольору поля секції під нею (тему й --field / --on ставить скрипт), текст — контрастний колір секції */
+  background: var(--hdr-bg, var(--blue)); color: #fff;
+  transition: color .35s, background-color .35s;
 }
-/* Скляна підкладка: розмиває контент, що ковзає під шапкою, і тоне в колір поля секції під нею.
-   Градієнт знизу вгору без межі: розмиття наростає шарами (1→16px, кожен у своїй смузі маски),
-   колір зверху згасає по м'якій кривій. На самому верху hero (лише зірка) — без підкладки */
-.hdr__glass {
-  position: absolute; inset: 0 0 -32px; z-index: -1; pointer-events: none;
-  transition: opacity .35s;
-}
-.hdr__glass i { position: absolute; inset: 0; -webkit-backdrop-filter: blur(var(--b)); backdrop-filter: blur(var(--b)); }
-.hdr__glass i:nth-child(1) { --b: 1px;  --m: linear-gradient(to top, transparent 0%, #000 12.5%, #000 37.5%, transparent 50%); }
-.hdr__glass i:nth-child(2) { --b: 2px;  --m: linear-gradient(to top, transparent 12.5%, #000 25%, #000 50%, transparent 62.5%); }
-.hdr__glass i:nth-child(3) { --b: 4px;  --m: linear-gradient(to top, transparent 25%, #000 37.5%, #000 62.5%, transparent 75%); }
-.hdr__glass i:nth-child(4) { --b: 8px;  --m: linear-gradient(to top, transparent 37.5%, #000 50%, #000 75%, transparent 87.5%); }
-.hdr__glass i:nth-child(5) { --b: 16px; --m: linear-gradient(to top, transparent 50%, #000 62.5%); }
-.hdr__glass i { -webkit-mask-image: var(--m); mask-image: var(--m); }
-.hdr__glass::after {
-  content: ""; position: absolute; inset: 0;
-  background: color-mix(in srgb, var(--glass, var(--blue)) 62%, transparent);
-  --m: linear-gradient(to top, transparent 0%, rgb(0 0 0 / .03) 10%, rgb(0 0 0 / .1) 20%, rgb(0 0 0 / .22) 30%,
-       rgb(0 0 0 / .38) 40%, rgb(0 0 0 / .56) 50%, rgb(0 0 0 / .73) 60%, rgb(0 0 0 / .87) 70%, rgb(0 0 0 / .96) 80%, #000 90%);
-  -webkit-mask-image: var(--m); mask-image: var(--m);
-  transition: background-color .35s;
-}
-.hdr.is-mark .hdr__glass, .hdr.is-open .hdr__glass { opacity: 0; }
-.hdr[data-theme="light"] { --glass: var(--paper); }
-.hdr[data-theme="field"] { --glass: var(--field); }
+.hdr[data-theme="light"] { --hdr-bg: var(--paper); color: var(--ink); }
+.hdr[data-theme="field"] { --hdr-bg: var(--field); color: var(--on); }
+/* відкрите меню: шапка прозора — синє коло меню росте з бургера крізь неї */
+.hdr.is-open { --hdr-bg: transparent; color: #fff; }
 .hdr__row { height: 100%; display: flex; align-items: center; gap: 40px; }
 .hdr__logo { position: relative; display: block; flex: none; }
-.hdr__nav { display: flex; gap: 28px; margin-left: auto; font-family: var(--f-ui); font-weight: 500; font-size: 15px; }
+/* кегль меню — у пропорції до великих форм hero (лого, гасло, кнопки 22px); на 1181–1440 усе в один рядок */
+.hdr__nav { display: flex; gap: clamp(22px, 1.9vw, 34px); margin-left: auto; font-family: var(--f-ui); font-weight: 500; font-size: clamp(17px, 1.3vw, 21px); }
 .hdr__nav a { opacity: .9; }
 @media (hover: hover) { .hdr__nav a:hover { opacity: 1; } }
 .hdr__nav a:focus-visible { opacity: 1; }
-.hdr__end { display: flex; align-items: center; gap: 22px; font-family: var(--f-ui); font-size: 14px; }
+.hdr__end { display: flex; align-items: center; gap: clamp(20px, 1.7vw, 30px); font-family: var(--f-ui); font-size: clamp(16px, 1.2vw, 19px); }
 .hdr__lang a { opacity: .82; }   /* неактивна мова: ≥4.5:1 на синьому й папері */
-.hdr__cta { background: #fff; color: var(--ink); --fill: var(--lime); --fill-on: var(--ink); transition: background-color .35s, color .35s; }
-.hdr[data-theme="light"] { color: var(--ink); }
-.hdr[data-theme="light"] .hdr__cta { background: var(--blue); color: #fff; }
-/* кольорове поле секції під хедером (--field / --on ставить скрипт із секції) */
-.hdr[data-theme="field"] { color: var(--on); }
+/* «Підтримати» — лайм брендбуку, текст — чорнило; ховер — біле коло, як у .btn--lime */
+.hdr__cta {
+  height: clamp(44px, 3.4vw, 52px); padding: 0 clamp(20px, 1.6vw, 28px); font-size: clamp(16px, 1.2vw, 19px);
+  background: var(--lime); color: var(--ink); --fill: #fff; --fill-on: var(--ink);
+  transition: background-color .35s, color .35s;
+}
 .hdr[data-theme="field"] .hdr__lang a { opacity: .9; }    /* неактивна мова на кольоровому полі (папір на зеленому): ≥4.5:1 */
-.hdr[data-theme="field"] .hdr__cta { background: var(--on); color: var(--off, var(--ink)); --ring: var(--on); --fill: var(--pink); --fill-on: var(--ink); }
+/* лаймове поле під шапкою (скрипт ставить .is-lime): кнопка — кольору тексту секції, щоб не злитися з полем */
+.hdr.is-lime .hdr__cta { background: var(--on); color: var(--off, var(--ink)); --ring: var(--on); --fill: #fff; --fill-on: var(--ink); }
 
 /* Бургер і мобільне меню (≤ --bp-menu, 1180px) */
 .hdr__burger {
@@ -257,7 +247,6 @@ main:focus { outline: none; }
 .hdr__burger span:last-child { top: 25px; }
 .hdr__burger[aria-expanded="true"] span:first-child { transform: translateY(4px) rotate(45deg); }
 .hdr__burger[aria-expanded="true"] span:last-child { transform: translateY(-4px) rotate(-45deg); }
-.hdr.is-open { color: #fff; }
 .hdr.is-open .hdr__cta { visibility: hidden; }
 
 .menu {
@@ -320,6 +309,11 @@ main:focus { outline: none; }
   opacity: 0; transform: scale(.2) rotate(-120deg);
   transition: opacity .45s var(--ease), transform .7s var(--ease);
 }
+/* форми в «C» — у кодових кольорах напрямків; око збігається з синім полем, тож воно кольору паперу (як око у футері),
+   а зіниця — синя, контрастна до ока */
+.hero__ico[data-dir="intersection"] { color: var(--lime); }
+.hero__ico[data-dir="grid"] { color: var(--pink); }
+.hero__ico[data-dir="density"] { color: var(--purple); }
 .hero__ico.is-on { opacity: 1; transform: none; }
 .hero__ico.is-out { opacity: 0; transform: scale(.2) rotate(120deg); }
 /* око: контур і зіниця — два шари однакового розміру; зсув зіниці (transform) ставить лупа в main.js, у спокої — центр */
@@ -877,7 +871,7 @@ body:has(.ftr__shapes.is-dragging) { user-select: none; -webkit-user-select: non
   .hero__lens { display: none; }
   .support { --up: 0px; }
   .ln { clip-path: none; }   /* рядки одразу на місці, маска не потрібна */
-  :is(.btn, .req__btn, .abtn, .hdr__burger):active { transform: none; }
+  :is(.btn, .link, .req__btn, .abtn, .hdr__burger):active { transform: none; }
   /* меню — одразу, без кола; і без мікропереходу видимості, інакше фокус не встигає на перший пункт */
   .menu, .menu * { transition: none !important; }
   /* партнери: статичний грід назв */
