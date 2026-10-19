@@ -289,10 +289,10 @@
     $('.dir__art', d).replaceChildren(svg);
   })).catch(err => console.warn('dir art', err));
 
-  /* ---------- 5. «Про нас»: текст проявляється словами за скролом, цифри докручуються ---------- */
+  /* ---------- 5. «Про нас»: текст проявляється словами за скролом ---------- */
   // Слова переходять з приглушеного (той самий колір, низька непрозорість) у повний, прив'язано до скролу: почали,
-  // коли верх тексту на 88% висоти екрана, закінчили, коли його низ на 45% — проявлення розтягнуте на весь прохід тексту. Край проявлення м'який — на кілька слів;
-  // маркер (<mark>) проявляється цілком, як одне слово. Скрінрідер читає цілий текст, розбита на слова копія aria-hidden.
+  // коли верх тексту виринув з лайму (низ екрана), закінчили, коли його низ на 55% — поступово, на прохід тексту. Край проявлення м'який — на кілька слів.
+  // Скрінрідер читає цілий текст, розбита на слова копія aria-hidden.
   // Без JS і при reduced motion — одразу повний колір
   const lead = $('[data-words]');
   const leadWords = [];
@@ -314,7 +314,7 @@
   // гілка скрол-циклу (frame): прогрес → непрозорість кожного слова (лише коли прогрес змінився)
   const leadScrub = vh => {
     const r = lead.getBoundingClientRect();
-    const a = vh * .88, end = vh * .45 - r.height;   // верх тексту в кінці проявлення
+    const a = vh, end = vh * .55 - r.height;   // верх тексту в кінці проявлення
     const p = clamp((a - r.top) / Math.max(1, a - end));
     if (p === leadP) return;
     leadP = p;
@@ -322,31 +322,33 @@
     leadWords.forEach((w, i) => { w.style.opacity = lerp(LEAD_DIM, 1, clamp((head - i) / LEAD_SOFT)).toFixed(3); });
   };
 
-  // Цифри: коли в кадрі, кожна докручується до свого значення (1.4 с, ease-out, по черзі через 150 мс); великі —
-  // з останніх 400; рік — назад від поточного, без розрядного пробілу
-  const facts = $$('.fact b[data-count]');
-  if (facts.length && !reduce) {
-    const fmt = (b, v) => (b.dataset.count.length > 3 && !/^20\d\d$/.test(b.dataset.count) ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : String(v)) + (b.dataset.suffix || '');
-    facts.forEach(b => { const to = +b.dataset.count; b._from = /^20\d\d$/.test(b.dataset.count) ? Math.max(new Date().getFullYear(), to + 8) : to > 1000 ? to - 400 : 0; b.textContent = fmt(b, b._from); });
-    const fio = new IntersectionObserver(([e]) => {
+  /* ---------- 6. Проєкти: слайдер карток (стрілки й лічильник — розділ 14) ---------- */
+  // Цифри на картках: коли плашки картки в кадрі (і по горизонталі теж — картки за краєм треку чекають), кожна
+  // докручується з нуля (великі — з останніх 400) до свого значення, по черзі через 120 мс; суфікс («+») — як у розмітці
+  if (!reduce) $$('.pcard__stats').forEach(dl => {
+    const nums = $$('dt', dl).map(dt => {
+      const t = dt.textContent.trim(), to = +t.replace(/\D/g, ''), suf = t.match(/\D*$/)[0];
+      return { dt, to, suf, from: to > 1000 ? to - 400 : 0 };
+    });
+    const fmt = (n, v) => (n.to >= 1000 ? String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') : String(v)) + n.suf;
+    nums.forEach(n => { n.dt.textContent = fmt(n, n.from); });
+    const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
-      fio.disconnect();
+      io.disconnect();
       const t0 = performance.now();
       const tick = now => {
         let done = true;
-        facts.forEach((b, i) => {
-          const k = clamp((now - t0 - i * 150) / 1800), to = +b.dataset.count;
+        nums.forEach((n, i) => {
+          const k = clamp((now - t0 - 250 - i * 120) / 1400);
           if (k < 1) done = false;
-          b.textContent = fmt(b, Math.round(lerp(b._from, to, 1 - (1 - k) ** 3)));
+          n.dt.textContent = fmt(n, Math.round(lerp(n.from, n.to, 1 - (1 - k) ** 3)));
         });
         if (!done) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
-    }, { rootMargin: '0px 0px -15% 0px' });
-    fio.observe(facts[0].parentNode);
-  }
-
-  /* ---------- 6. Проєкти: слайдер карток (стрілки й лічильник — розділ 14) ---------- */
+    }, { threshold: .6 });
+    io.observe(dl);
+  });
   // Hover / фокус картки — у CSS (--h). Тут — пропорції форм біля фото і перехід із «Напрямків» до картки
   const pgrid = $('.pgrid');
   const pad2 = n => String(n).padStart(2, '0');   // лічильники слайдерів «01 / 08»
@@ -395,24 +397,16 @@
   }
   sizeField();
   let heroLensScroll = () => {};   // лупа hero (розділ 11) згортається, коли сцену скролять
-  if (!reduce) document.documentElement.classList.add('has-stack');
-  // «Про нас пишуть» наїжджає на новини: попередня секція стоїть, коли дійшла низом до краю екрана, наступна наїжджає поверх. CSS бере висоту того, що стоїть (--wh, на скільки підняти
-  // sticky), і того, що наїжджає (--mh, наїзд — не більше екрана)
   const newsSec = $('#news'), mediaSec = $('#media');
   const support = $('.support');
-  [[newsSec, $('.wrap', newsSec), mediaSec]].forEach(([under, pin, over]) => {
-    const ro = new ResizeObserver(() => {
-      under.style.setProperty('--wh', `${pin.offsetHeight}px`);
-      [under, over].forEach(s => s.style.setProperty('--mh', `${over.offsetHeight}px`));
-    });
-    [pin, over].forEach(el => ro.observe(el));
-    // фокус з клавіатури в секції, яка вже під наступною, — відкочуємо до моменту перед наїздом
-    under.addEventListener('focusin', e => {
-      const m = over.getBoundingClientRect().top;
-      if (!reduce && !over.hidden && m < innerHeight && e.target.getBoundingClientRect().bottom > m && e.target.matches(':focus-visible'))
-        scrollTo({ top: scrollY - (innerHeight - m) });
-    });
-  });
+  // форми «Про нас пишуть» спускаються, коли секція доїхала верхом до краю екрана; скрол назад вище секції — повертаються вгору
+  if (!reduce && mediaSec && !mediaSec.hidden) {
+    mediaSec.classList.add('is-drop');
+    new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) mediaSec.classList.add('is-landed');
+      else if (e.boundingClientRect.top > 0) mediaSec.classList.remove('is-landed');
+    }, { rootMargin: '0px 0px -92% 0px' }).observe(mediaSec);
+  }
   const supportInner = $('.support__inner');
   let supportIn = false;
 
@@ -454,6 +448,8 @@
       const cy = vh * 1.5, r = lerp(vh * .5, Math.hypot(vw / 2, cy) + 20, hp);
       domeTop = cy - r;
       heroDome.style.clipPath = `circle(${r.toFixed(1)}px at 50% ${cy.toFixed(1)}px)`;
+      // «Про нас» заходить на hero ще під час пагорба — видно лише всередині тієї ж дуги; лайм залив екран — без обрізки
+      about.style.clipPath = hp < 1 ? `circle(${r.toFixed(1)}px at 50% ${(cy - about.getBoundingClientRect().top).toFixed(1)}px)` : '';
       const t = clamp(hp / .3);
       heroBottom.style.opacity = t ? (1 - t).toFixed(3) : '';
       heroBottom.style.transform = t ? `translateY(${(30 * t).toFixed(1)}px)` : '';
@@ -470,17 +466,17 @@
 
     // Тема хедера за секцією під ним
     const y = 40;
-    let theme = 'light', mark = false, lime = false;
+    let theme = 'light', mark = false, lime = false, glass = false;
     for (let s of sections) {
       const r = s.getBoundingClientRect();
       if (r.top <= y && r.bottom > y) {
-        if (s === newsSec && !mediaSec.hidden && mediaSec.getBoundingClientRect().top <= y) continue;   // лайм уже наїхав під шапку
         if (s === hero && domeTop > y) {
           mark = scrollY < 8;         // лише на самому верху в шапці зірка з «C»; щойно гортаємо — повне лого
           theme = 'blue';
         }
         else if (s === support) theme = 'solid-blue';
         else if (s === hero || s.dataset.theme === 'field') {
+          glass = s === mediaSec;   // над «Про нас пишуть» — градієнтний блюр замість суцільного тла
           if (s === hero) s = about;   // пагорб уже під шапкою — шапка лаймова, як «Про нас»
           theme = 'field';
           const field = s.style.getPropertyValue('--field');
@@ -496,6 +492,7 @@
     if (hdr.dataset.theme !== theme) hdr.dataset.theme = theme;
     hdr.classList.toggle('is-mark', mark);
     hdr.classList.toggle('is-lime', lime);
+    hdr.classList.toggle('is-glass', glass);
 
     // Футер: хедер більше не кріпиться — стоїть над купою фігур і їде вгору разом зі сторінкою, не перекриваючи їх
     const lift = Math.min(0, ftr.getBoundingClientRect().top - pileRise - hdr.offsetHeight);
@@ -1088,7 +1085,7 @@
 
   /* ---------- 14. Слайдери проєктів, новин і «Про нас пишуть»: нативний скрол зі snap, стрілки, лічильник, перетягування мишею ---------- */
   const slider = sec => {
-    const track = $('.track', sec), btns = $$('.tfoot .abtn', sec), all = [...track.children], num = $('.tfoot__count b', sec);
+    const track = $('.track', sec), btns = $$('.abtn', sec), all = [...track.children], num = $('.tfoot__count b', sec);
     let items = all;   // видимі картки (фільтр проєктів ховає решту)
     // картки можуть бути різної ширини (проєкти): крок — до сусідньої картки, номер — найближча до лівого краю
     const lefts = () => items.map(el => el.offsetLeft - items[0].offsetLeft);
@@ -1105,7 +1102,7 @@
     // Мишею трек можна тягнути; після перетягування клік по картці не спрацьовує
     let drag = null, dragged = false;
     track.addEventListener('pointerdown', e => {
-      if (e.pointerType !== 'mouse' || e.button) return;
+      if (e.pointerType !== 'mouse' || e.button || track.scrollWidth <= track.clientWidth) return;   // плитка («Про нас пишуть» на десктопі) не тягнеться
       drag = { x: e.clientX, left: track.scrollLeft }; dragged = false;
     });
     track.addEventListener('dragstart', e => e.preventDefault());   // посилання й лого не тягнуться як файли
