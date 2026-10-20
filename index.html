@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>INSCIENCE — робимо науку видимою</title>
   <meta name="description" content="INSCIENCE популяризує науку і доказову медицину та робить українських вчених і лікарів видимими.">
-  <link rel="stylesheet" href="styles.css?v=39">
+  <link rel="stylesheet" href="styles.css?v=42">
   <!-- приховані стани появи — лише коли працює скрипт (без JS увесь вміст видно одразу) -->
   <script>document.documentElement.classList.add('js')</script>
 </head>
@@ -18,14 +18,20 @@
   <div class="wrap hdr__row">
     <a href="#top" class="hdr__logo" aria-label="INSCIENCE — на головну"><span class="logo-wm"></span><span class="logo-star"></span></a>
     <nav class="hdr__nav" aria-label="Основна навігація">
-      <a href="#about">Про нас</a>
-      <a href="#directions">Напрямки</a>
+      <div class="hdr__drop">
+        <a href="#about">Про нас<svg class="hdr__chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1.5 6 6.5 11 1.5"/></svg></a>
+        <div class="hdr__sub">
+          <a href="#about">Хто ми</a>
+          <a href="#">Звітність</a>
+          <a href="#projects">Наш вплив</a>
+        </div>
+      </div>
       <a href="#projects">Проєкти</a>
+      <a href="#partners">Партнерства</a>
       <a href="#news">Новини</a>
-      <a href="#partners">Партнери</a>
     </nav>
     <div class="hdr__end">
-      <span class="hdr__lang"><b>UA</b> / <a href="#">EN</a></span>
+      <span class="hdr__lang"><b>УКР</b> / <a href="#">ENG</a></span>
       <a href="#support" class="btn btn--sm btn--pill hdr__cta">Підтримати</a>
     </div>
     <button class="hdr__burger" type="button" aria-expanded="false" aria-controls="menu" aria-label="Меню">
@@ -38,13 +44,17 @@
 <div class="menu" id="menu">
   <nav class="menu__nav" aria-label="Основна навігація">
     <a href="#about">Про нас</a>
-    <a href="#directions">Напрямки</a>
+    <div class="menu__sub">
+      <a href="#about">Хто ми</a>
+      <a href="#">Звітність</a>
+      <a href="#projects">Наш вплив</a>
+    </div>
     <a href="#projects">Проєкти</a>
+    <a href="#partners">Партнерства</a>
     <a href="#news">Новини</a>
-    <a href="#partners">Партнери</a>
   </nav>
   <a href="#support" class="btn btn--xl btn--lime menu__cta">Підтримати</a>
-  <p class="menu__lang"><b>UA</b> / <a href="#">EN</a></p>
+  <p class="menu__lang"><b>УКР</b> / <a href="#">ENG</a></p>
 </div>
 
 <main id="main" tabindex="-1">
@@ -522,6 +532,6 @@
 <div class="toast" role="status" aria-live="polite"></div>
 
 <script src="assets/vendor/matter.min.js"></script>
-<script src="main.js?v=38"></script>
+<script src="main.js?v=39"></script>
 </body>
 </html>

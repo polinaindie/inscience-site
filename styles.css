@@ -245,6 +245,31 @@ main:focus { outline: none; }
 .hdr__nav a { opacity: .9; }
 @media (hover: hover) { .hdr__nav a:hover { opacity: 1; } }
 .hdr__nav a:focus-visible { opacity: 1; }
+/* «Про нас» з підпунктами: відкриваються ховером (миша) або клавішею Tab; тач — лише перехід за якорем.
+   Шеврон у пункті показує, що є підпункти; лаймова панель — чорнилом, як «Підтримати» */
+/* панель звисає від нижнього краю шапки (.hdr — фіксований, тож top: 100% = низ шапки); горизонталь — від пункту */
+.hdr__chev {
+  display: inline-block; width: .62em; height: .4em; margin-left: .4em; vertical-align: .12em; overflow: visible;
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .3s var(--ease);
+}
+.hdr__sub {
+  position: absolute; top: 100%; left: auto; margin-left: -28px; z-index: 1;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+  padding: 22px 28px 26px; border-radius: 28px;
+  background: var(--lime); color: var(--ink); box-shadow: 0 24px 48px -24px rgba(0, 0, 0, .4);
+  opacity: 0; visibility: hidden; transform: translateY(-8px);
+  transition: opacity .3s var(--ease), transform .3s var(--ease), visibility 0s .3s;
+}
+.hdr__sub a { white-space: nowrap; opacity: 1; }
+@media (hover: hover) {
+  .hdr__drop:hover .hdr__sub { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+  .hdr__drop:hover .hdr__chev { transform: rotate(180deg); }
+}
+.hdr__drop:has(:focus-visible) .hdr__sub { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.hdr__drop:has(:focus-visible) .hdr__chev { transform: rotate(180deg); }
+/* шапка їде вгору разом із футером (main.js: .is-lifted) — список ховаємо одразу, без згасання, щоб не висів обрізаний зверху */
+.hdr.is-lifted .hdr__drop .hdr__sub { opacity: 0; visibility: hidden; transition: none; }
 .hdr__end { display: flex; align-items: center; gap: clamp(20px, 1.7vw, 30px); font-family: var(--f-ui); font-size: clamp(16px, 1.2vw, 19px); }
 .hdr__lang a { opacity: .82; }   /* неактивна мова: ≥4.5:1 на синьому й папері */
 /* «Підтримати» — лайм брендбуку, текст — чорнило; ховер — біле коло, як у .btn--lime */
@@ -289,6 +314,9 @@ main:focus { outline: none; }
   font-family: var(--f-head); font-weight: 500; text-transform: uppercase; text-decoration: none;
   font-size: clamp(34px, 8vw, 64px); line-height: 1.05;
 }
+/* підпункти «Про нас» — завжди видно під пунктом (мобільне меню без ховера), меншим кеглем і з відступом */
+.menu__sub { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-left: clamp(16px, 4vw, 28px); }
+.menu__sub a { font-size: clamp(24px, 6vw, 40px); }
 .menu__cta { align-self: flex-start; }
 .menu__lang a { opacity: .82; }
 @media (min-width: 761px) { .menu__lang { display: none; } }   /* ширше — мова вже в шапці */

@@ -496,7 +496,9 @@
 
     // Футер: хедер більше не кріпиться — стоїть над купою фігур і їде вгору разом зі сторінкою, не перекриваючи їх
     const lift = Math.min(0, ftr.getBoundingClientRect().top - pileRise - hdr.offsetHeight);
-    hdr.style.transform = lift && !hdr.classList.contains('is-open') ? `translateY(${lift}px)` : '';
+    const lifted = !!lift && !hdr.classList.contains('is-open');
+    hdr.style.transform = lifted ? `translateY(${lift}px)` : '';
+    hdr.classList.toggle('is-lifted', lifted);   // випадаючий список «Про нас» ховаємо, поки шапку їде вгору — інакше висить обрізаний зверху
   }
 
   let ticking = false;
